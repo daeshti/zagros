@@ -1,8 +1,8 @@
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <utility>
 
 namespace Zagros {
@@ -18,6 +18,12 @@ enum class Unit {
 enum class Error {
   /// The operation was successful.
   None,
+
+  /// The operation failed because it`s attempting to divide_remainder by zero.
+  DivisionByZero,
+
+  /// The operation failed because it`s attempting to do illegal instruction on float mode.
+  InvalidFloatOperation,
 
   /// The operation failed because not enough memory was available.
   OutOfMemory,
@@ -42,12 +48,6 @@ enum class Error {
 
   /// The operation failed because of illegal interrupt id.
   IllegalInterruptId,
-
-  /// The operation failed because it`s attempting to divide by zero.
-  DivisionByZero,
-
-  /// The operation failed because it`s attempting to do illegal instruction on float mode.
-  InvalidFloatOperation,
 
   /// System should successfully halted.
   SystemHalt
@@ -103,6 +103,469 @@ consteval result<> fail(Error error) noexcept {
   return fail<Unit>(error);
 }
 }
+
+/**
+ * Operation mode for the Core.
+ */
+enum class OpMode {
+  /// The core is in signed integer mode.
+  SIGNED,
+
+  /// The core is in unsigned integer mode.
+  UNSIGNED,
+
+  /// The core is in floating point mode.
+  FLOAT
+};
+
+/**
+ * A representation of a register's value.
+ */
+class Cell {
+ private:
+  /// The value of the register as a byte array.
+  std::array<uint8_t, 4> bs;
+
+ public:
+
+  // region Constructors
+  /**
+   * A constructor that initializes the register with given bytes.
+   */
+  constexpr Cell(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) noexcept: bs{b0, b1, b2, b3} {}
+
+  /**
+   * A constructor that initializes the register with given bytes.
+   */
+  constexpr explicit Cell(std::array<uint8_t, 4> bs) noexcept: bs{bs} {}
+
+  // Following functions write to all 4 bytes of the `bs` array therefore don't need to initialize the `bs` array.
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
+  /**
+   * A constructor that initializes the register with the given iterator
+   * @tparam Iterator The iterator type.
+   * @param first The iterator to the first element.
+   * @param count The number of elements to copy.
+   */
+  template<typename Iterator>
+  consteval Cell(
+      typename std::iterator_traits<Iterator>::uint8_t first,
+      const size_t count) {
+    size_t n = count <= 4 ? count : 4;
+    std::copy(first, first + n, bs.begin());
+  }
+
+  /**
+  * A constructor to initialize the register with an int32_t.
+   * @param value The value to initialize the register with.
+  */
+  constexpr explicit Cell(const int32_t value) noexcept {
+    bs[0] = value;
+    bs[1] = value >> 8;
+    bs[2] = value >> 16;
+    bs[3] = value >> 24;
+  }
+
+  /**
+  * A constructor to initialize the register with an uint32_t.
+   * @param value The value to initialize the register with.
+  */
+  constexpr explicit Cell(const uint32_t value) noexcept {
+    bs[0] = value;
+    bs[1] = value >> 8;
+    bs[2] = value >> 16;
+    bs[3] = value >> 24;
+  }
+
+  /**
+  * A constructor that initializes the register with a float.
+  * *NOTE*: This constructor is not constexpr because it`s not possible to initialize a float with a constexpr.
+   * @param value The value to initialize the register with.
+  */
+  explicit Cell(const float value) noexcept {
+    std::memcpy(bs.data(), &value, 4);
+  }
+
+  /**
+  * A constructor that initializes the register with a bool value.
+   * @param value The value to initialize the register with.
+  */
+  constexpr explicit Cell(const bool value) noexcept {
+    for (auto &b : bs) {
+      b = value ? 0xFF : 0x00;
+    }
+  }
+
+  /**
+   * Copy constructor.
+   * @param rhs The rhs cell to copy from.
+   */
+  constexpr Cell(const Cell &rhs) noexcept = default;
+#pragma clang diagnostic pop
+// endregion
+
+  // region Accessors
+  /**
+  * Gets the value of the register as an int32_t.
+  * @return Value of the register as an int32_t.
+  */
+  [[nodiscard]]
+  constexpr int32_t to_int32() const noexcept {
+    return bs[0] | (bs[1] << 8) | (bs[2] << 16) | (bs[3] << 24);
+  }
+
+  /**
+  * Gets the value of the register as an uint32_t.
+  * @return Value of the register as an uint32_t.
+  */
+  [[nodiscard]]
+  constexpr uint32_t to_uint32() const noexcept {
+    return bs[0] | (bs[1] << 8) | (bs[2] << 16) | (bs[3] << 24);
+  }
+
+  /**
+  * Gets the value of the register as a float.
+  * @return Value of the register as a float.
+  */
+  [[nodiscard]]
+  float to_float() const noexcept {
+    float value;
+    std::memcpy(&value, bs.data(), 4);
+    return value;
+  }
+
+  /**
+  * Gets the value of the register as a bool.
+  * @return Value of the register as a bool.
+  */
+  [[nodiscard]]
+  constexpr bool to_bool() const noexcept {
+    return std::all_of(bs.begin(), bs.end(), [](auto b) { return b == 0xFF; });
+  }
+
+  /**
+   * Gets the value of register as bytes.
+   */
+  [[nodiscard]]
+  constexpr std::array<uint8_t, 4> to_bytes() const noexcept {
+    return bs;
+  }
+// endregion
+
+  // region Comparison operations
+  /**
+   * Equality operation.
+   * @param rhs The right hand side of the comparison.
+   * @param op_mode The operation mode to use.
+   * @return True if the register is equal the other register in provided operation mode.
+   */
+  [[nodiscard]] consteval Cell equal(const Cell rhs) const noexcept {
+    return Cell(bs == rhs.bs);
+  }
+
+  /**
+   * Inequality operation.
+   * @param rhs The right hand side of the comparison.
+   * @param op_mode The operation mode to use.
+   * @return True if the register is not equal the rhs register in provided operation mode.
+   */
+  [[nodiscard]] consteval Cell not_equal(const Cell rhs) const noexcept {
+    return Cell(bs != rhs.bs);
+  }
+
+  /**
+   * Less than operation.
+   * @param rhs The right hand side of the comparison.
+   * @param op_mode The operation mode to use.
+   * @return True if the register is less than the other register in provided operation mode.
+   */
+  [[nodiscard]] Cell less_than(const Cell rhs, OpMode op_mode) const noexcept {
+    switch (op_mode) {
+      case OpMode::SIGNED: {
+        return Cell(this->to_int32() < rhs.to_int32());
+      }
+      case OpMode::UNSIGNED: {
+        return Cell(this->to_uint32() < rhs.to_uint32());
+      }
+      case OpMode::FLOAT: {
+        return Cell(this->to_float() < rhs.to_float());
+      }
+    }
+  }
+
+  /**
+   * Greater than operation.
+   * @param rhs The right hand side of the comparison.
+   * @param op_mode The operation mode to use.
+   * @return True if the register is greater than than the other register in provided operation mode.
+   */
+  [[nodiscard]] Cell greater_than(const Cell rhs, OpMode op_mode) const noexcept {
+    switch (op_mode) {
+      case OpMode::SIGNED: {
+        return Cell(this->to_int32() > rhs.to_int32());
+      }
+      case OpMode::UNSIGNED: {
+        return Cell(this->to_uint32() > rhs.to_uint32());
+      }
+      case OpMode::FLOAT: {
+        return Cell(this->to_float() > rhs.to_float());
+      }
+    }
+  }
+// endregion
+
+  // region Arithmetic operations
+  /**
+   * Addition operation.
+   * @param rhs The right hand side of the addition.
+   * @param op_mode The operation mode to use.
+   * @return The result of the addition.
+   */
+  [[nodiscard]] Cell add(const Cell rhs, OpMode op_mode) const noexcept {
+    switch (op_mode) {
+      case OpMode::SIGNED: {
+        return Cell(this->to_int32() + rhs.to_int32());
+      }
+      case OpMode::UNSIGNED: {
+        return Cell(this->to_uint32() + rhs.to_uint32());
+      }
+      case OpMode::FLOAT: {
+        return Cell(this->to_float() + rhs.to_float());
+      }
+    }
+  }
+
+  /**
+   * Subtraction operation.
+   * @param rhs The right hand side of the subtraction.
+   * @param op_mode The operation mode to use.
+   * @return The result of the subtraction.
+   */
+  [[nodiscard]] Cell subtract(const Cell rhs, OpMode op_mode) const noexcept {
+    switch (op_mode) {
+      case OpMode::SIGNED: {
+        return Cell(this->to_int32() - rhs.to_int32());
+      }
+      case OpMode::UNSIGNED: {
+        return Cell(this->to_uint32() - rhs.to_uint32());
+      }
+      case OpMode::FLOAT: {
+        return Cell(this->to_float() - rhs.to_float());
+      }
+    }
+  }
+
+  /**
+   * Multiplication operation.
+   * @param rhs The right hand side of the multiplication.
+   * @param op_mode The operation mode to use.
+   * @return The result of the multiplication.
+   */
+  [[nodiscard]] Cell multiply(const Cell rhs, OpMode op_mode) const noexcept {
+    switch (op_mode) {
+      case OpMode::SIGNED: {
+        return Cell(this->to_int32() * rhs.to_int32());
+      }
+      case OpMode::UNSIGNED: {
+        return Cell(this->to_uint32() * rhs.to_uint32());
+      }
+      case OpMode::FLOAT: {
+        return Cell(this->to_float() * rhs.to_float());
+      }
+    }
+  }
+
+  /**
+   * Division and remainder operation.
+   * @param rhs The right hand side of the division.
+   * @param op_mode The operation mode to use.
+   * @return a tuple of (Error::DivisionByZero, _, _) if the dominator is zero,
+   * otherwise a tuple of (Error::None, Modulo, Quotient).
+   */
+  [[nodiscard]] std::tuple<Error, Cell, Cell> divide_remainder(const Cell rhs, OpMode op_mode) const noexcept {
+    switch (op_mode) {
+      case OpMode::SIGNED: {
+        if (rhs.to_int32() == 0) {
+          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+        }
+        return std::make_tuple(Error::None,
+                               Cell(this->to_int32() % rhs.to_int32()),
+                               Cell(this->to_int32() / rhs.to_int32()));
+      }
+      case OpMode::UNSIGNED: {
+        if (rhs.to_uint32() == 0) {
+          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+        }
+        return std::make_tuple(Error::None,
+                               Cell(this->to_uint32() % rhs.to_uint32()),
+                               Cell(this->to_uint32() / rhs.to_uint32()));
+      }
+      case OpMode::FLOAT: {
+        if (rhs.to_float() == 0.0) {
+          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+        }
+        return std::make_tuple(Error::None,
+                               Cell(std::fmod(this->to_float(), rhs.to_float())),
+                               Cell(this->to_float() / rhs.to_float()));
+      }
+    }
+  }
+
+  /**
+   * Multiply, then Division and remainder operation. ( (this * mul) / div )
+   * @param mid The value to multiply the this by.
+   * @param rhs The right hand side of the division.
+   * @param op_mode The operation mode to use.
+   * @return a tuple of (Error::DivisionByZero, _, _) if the dominator is zero,
+   * otherwise a tuple of (Error::None, Modulo, Quotient).
+   */
+  [[nodiscard]] std::tuple<Error, Cell, Cell> multiply_divide_remainder(
+      const Cell mul, const Cell rhs, OpMode op_mode) const noexcept {
+    switch (op_mode) {
+      case OpMode::SIGNED: {
+        if (rhs.to_int32() == 0) {
+          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+        }
+        return {Error::None,
+                Cell((this->to_int32() * mul.to_int32()) % rhs.to_int32()),
+                Cell((this->to_int32() * mul.to_int32()) / rhs.to_int32())};
+      }
+      case OpMode::UNSIGNED: {
+        if (rhs.to_uint32() == 0) {
+          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+        }
+        return {Error::None,
+                Cell((this->to_uint32() * mul.to_uint32()) % rhs.to_uint32()),
+                Cell((this->to_uint32() * mul.to_uint32()) / rhs.to_uint32())};
+      }
+      case OpMode::FLOAT: {
+        if (rhs.to_float() == 0.0) {
+          return {Error::DivisionByZero, Cell(0), Cell(0)};
+        }
+        return {Error::None,
+                Cell(std::fmod((this->to_float() * mul.to_float()), rhs.to_float())),
+                Cell((this->to_float() * mul.to_float()) / rhs.to_float())};
+      }
+    }
+  }
+// endregion
+
+  // region Bit operations
+  /**
+   * Bitwise AND operation.
+   * @param rhs The right hand side of the operation.
+   * @return The result of the operation.
+   */
+  [[nodiscard]] Cell bitwise_and(const Cell rhs) const noexcept {
+    // Array will have all bytes written to, therefore it doesn't need initialization
+    std::array<uint8_t, 4> result; // NOLINT(cppcoreguidelines-pro-type-member-init)
+    for (size_t i = 0; i < 4; i++) {
+      result[i] = this->bs[i] & rhs.bs[i];
+    }
+    return Cell(result);
+  }
+
+  /**
+   * Bitwise OR operation.
+   * @param rhs The right hand side of the operation.
+   * @return The result of the operation.
+   */
+  [[nodiscard]] Cell bitwise_or(const Cell rhs) const noexcept {
+    // Array will have all bytes written to, therefore it doesn't need initialization
+    std::array<uint8_t, 4> result; // NOLINT(cppcoreguidelines-pro-type-member-init)
+    for (size_t i = 0; i < 4; i++) {
+      result[i] = this->bs[i] | rhs.bs[i];
+    }
+    return Cell(result);
+  }
+
+  /**
+   * Bitwise XOR operation.
+   * @param rhs The right hand side of the operation.
+   * @return The result of the operation.
+   */
+  [[nodiscard]] Cell bitwise_xor(const Cell rhs) const noexcept {
+    // Array will have all bytes written to, therefore it doesn't need initialization
+    std::array<uint8_t, 4> result; // NOLINT(cppcoreguidelines-pro-type-member-init)
+    for (size_t i = 0; i < 4; i++) {
+      result[i] = this->bs[i] ^ rhs.bs[i];
+    }
+    return Cell(result);
+  }
+
+  /**
+   * Bitwise NOT operation.
+   * @return The result of the operation.
+   */
+  [[nodiscard]] Cell bitwise_not() const noexcept {
+    // Array will have all bytes written to, therefore it doesn't need initialization
+    std::array<uint8_t, 4> result; // NOLINT(cppcoreguidelines-pro-type-member-init)
+    for (size_t i = 0; i < 4; i++) {
+      result[i] = ~this->bs[i];
+    }
+    return Cell(result);
+  }
+
+  /**
+   * Bitwise left shift operation.
+   * @param rhs The right hand side of the operation.
+   * @param op_mode The operation mode.
+   * @return a pair of (Error::InvalidFloatOperation, _) if any of the arguments is a float,
+   * otherwise a pair of (Error::None, Result).
+   */
+  [[nodiscard]] std::pair<Error, Cell> bitwise_shift_left(const Cell rhs, OpMode op_mode) const noexcept {
+    switch (op_mode) {
+      case OpMode::SIGNED: {
+        return {Error::None, Cell(this->to_int32() << rhs.to_int32())};
+      }
+      case OpMode::UNSIGNED: {
+        return {Error::None, Cell(this->to_uint32() << rhs.to_uint32())};
+      }
+      case OpMode::FLOAT: {
+        return {Error::InvalidFloatOperation, Cell(0)};
+      }
+    }
+  }
+
+  /**
+   * Bitwise right shift operation.
+   * @param rhs The right hand side of the operation.
+   * @param op_mode The operation mode.
+   * @return a pair of (Error::InvalidFloatOperation, _) if any of the arguments is a float,
+   * otherwise a pair of (Error::None, Result).
+   */
+  [[nodiscard]] std::pair<Error, Cell> bitwise_shift_right(const Cell rhs, OpMode op_mode) const noexcept {
+    switch (op_mode) {
+      case OpMode::SIGNED: {
+        return {Error::None, Cell(this->to_int32() >> rhs.to_int32())};
+      }
+      case OpMode::UNSIGNED: {
+        return {Error::None, Cell(this->to_uint32() >> rhs.to_uint32())};
+      }
+      case OpMode::FLOAT: {
+        return {Error::InvalidFloatOperation, Cell(0)};
+      }
+    }
+  }
+// endregion
+
+  // region Operators operations
+  /**
+   * Assignment operator.
+   * @param rhs The right hand side of the operation.
+   */
+  constexpr Cell &operator=(const Cell &rhs) noexcept = default;
+
+  /**
+   * Equality operator.
+   * @param rhs The other cell to compare with.
+   */
+  constexpr bool operator==(const Cell &rhs) const noexcept {
+    return bs == rhs.bs;
+  }
+  // endregion
+};
 
 /**
  * A snapshot of a stack.
@@ -618,20 +1081,6 @@ class InterruptTable {
   [[nodiscard]] constexpr auto snapshot() const noexcept -> InterruptTableSnapshot<S> {
     return InterruptTableSnapshot<S>(data);
   }
-};
-
-/**
- * Operation mode for the Core.
- */
-enum class OpMode {
-  /// The core is in signed integer mode.
-  SIGNED,
-
-  /// The core is in unsigned integer mode.
-  UNSIGNED,
-
-  /// The core is in floating point mode.
-  FLOAT
 };
 
 /**
