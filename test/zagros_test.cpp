@@ -728,7 +728,7 @@ TEST(VM, InstructionStoreByteWorks) {
   prg.push_back((uint8_t)137); // 05
   prg.push_back(OpCode::LB); // 06
   prg.push_back((uint8_t)3); // 07
-  prg.push_back(OpCode::SH); // 08
+  prg.push_back(OpCode::SB); // 08
   prg.push_back(OpCode::HS); // 09
   auto vm = loaded_vm(prg);
   vm.run();
@@ -795,5 +795,595 @@ TEST(VM, InstructionSwapWorks) {
   ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
 }
 
+TEST(VM, InstructionPushAddressWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 137); // 01
+  prg.push_back(OpCode::PU); // 02
+  prg.push_back(OpCode::HS); // 03
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_addrs(), 0);
+  ASSERT_EQ(pop, Cell{137});
+  ASSERT_EQ(core.get_ip(), 3);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionPopAddressWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 137); // 01
+  prg.push_back(OpCode::PU); // 02
+  prg.push_back(OpCode::PO); // 03
+  prg.push_back(OpCode::HS); // 04
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{137});
+  ASSERT_EQ(core.get_ip(), 4);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionEqualWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 137); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 137); // 03
+  prg.push_back(OpCode::EQ); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{true});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionNotEqualWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 0); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 255); // 03
+  prg.push_back(OpCode::NE); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{true});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionLessThanWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 0); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 255); // 03
+  prg.push_back(OpCode::LT); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{true});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionGreaterThanWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 255); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 0); // 03
+  prg.push_back(OpCode::GT); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{true});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+
+TEST(VM, InstructionAddWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 137); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 137); // 03
+  prg.push_back(OpCode::AD); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{274});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionSubtractWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 137); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 137); // 03
+  prg.push_back(OpCode::SU); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{0});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionMultiplyWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 137); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 137); // 03
+  prg.push_back(OpCode::MU); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{18769});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionDivideRemainderWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 255); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 8); // 03
+  prg.push_back(OpCode::DM); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop1 = stack_pop(core.get_data(), 0);
+  auto pop2 = stack_pop(core.get_data(), 1);
+  ASSERT_EQ(pop1, Cell{31});
+  ASSERT_EQ(pop2, Cell{7});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionMultiplyDivideRemainderWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 255); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 4); // 03
+  prg.push_back(OpCode::LB); // 04
+  prg.push_back((uint8_t) 8); // 05
+  prg.push_back(OpCode::MD); // 06
+  prg.push_back(OpCode::HS); // 07
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop1 = stack_pop(core.get_data(), 0);
+  auto pop2 = stack_pop(core.get_data(), 1);
+  ASSERT_EQ(pop1, Cell{127});
+  ASSERT_EQ(pop2, Cell{4});
+  ASSERT_EQ(core.get_ip(), 7);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionAndWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 137); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 0); // 03
+  prg.push_back(OpCode::AN); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{0});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionOrWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 137); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 0); // 03
+  prg.push_back(OpCode::OR); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{137});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionXorWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 137); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 137); // 03
+  prg.push_back(OpCode::XO); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{0});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionNotWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 0); // 01
+  prg.push_back(OpCode::NT); // 02
+  prg.push_back(OpCode::HS); // 03
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{0xFFFFFFFF});
+  ASSERT_EQ(core.get_ip(), 3);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionShiftLeftWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 4); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 1); // 03
+  prg.push_back(OpCode::SL); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{8});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionShiftRightWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 4); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 1); // 03
+  prg.push_back(OpCode::SR); // 04
+  prg.push_back(OpCode::HS); // 05
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{2});
+  ASSERT_EQ(core.get_ip(), 5);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionPackWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 0xAA); // 01
+  prg.push_back(OpCode::LB); // 02
+  prg.push_back((uint8_t) 0xBB); // 03
+  prg.push_back(OpCode::LB); // 04
+  prg.push_back((uint8_t) 0xCC); // 05
+  prg.push_back(OpCode::LB); // 06
+  prg.push_back((uint8_t) 0xDD); // 07
+  prg.push_back(OpCode::PA); // 08
+  prg.push_back(OpCode::HS); // 09
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_data(), 0);
+  ASSERT_EQ(pop, Cell{0xAABBCCDD});
+  ASSERT_EQ(core.get_ip(), 9);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionUnpackWorks) {
+  program prg;
+  prg.push_back(OpCode::LW); // 00
+  prg.push_back(OpCode::NO); // 01
+  prg.push_back(OpCode::NO); // 02
+  prg.push_back(OpCode::NO); // 03
+  prg.push_back((uint32_t)0xAABBCCDD); // 04
+  prg.push_back(OpCode::UN); // 08
+  prg.push_back(OpCode::HS); // 09
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop0 = stack_pop(core.get_data(), 0);
+  auto pop1 = stack_pop(core.get_data(), 1);
+  auto pop2 = stack_pop(core.get_data(), 2);
+  auto pop3 = stack_pop(core.get_data(), 3);
+  ASSERT_EQ(pop0, Cell{0xDD});
+  ASSERT_EQ(pop1, Cell{0xCC});
+  ASSERT_EQ(pop2, Cell{0xBB});
+  ASSERT_EQ(pop3, Cell{0xAA});
+  ASSERT_EQ(core.get_ip(), 9);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionRelativeWorks) {
+  program prg;
+  prg.push_back(OpCode::RL); // 00
+  prg.push_back(OpCode::HS); // 01
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  ASSERT_EQ(core.get_ip(), 1);
+  ASSERT_EQ(core.get_addr_mode(), Zagros::AddressMode::RELATIVE);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionCallWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 10); // 01
+  prg.push_back(OpCode::CA); // 02
+  prg.push_back(OpCode::NO); // 03
+  prg.push_back(OpCode::NO); // 04
+  prg.push_back(OpCode::NO); // 05
+  prg.push_back(OpCode::NO); // 06
+  prg.push_back(OpCode::NO); // 07
+  prg.push_back(OpCode::NO); // 08
+  prg.push_back(OpCode::NO); // 09
+  prg.push_back(OpCode::HS); // 10
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_addrs(), 0);
+  ASSERT_EQ(core.get_ip(), 10);
+  ASSERT_EQ(pop, Cell{6});
+  ASSERT_EQ(core.get_addr_mode(), Zagros::AddressMode::DIRECT);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionCallRelativeWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 7); // 01
+  prg.push_back(OpCode::RL); // 02
+  prg.push_back(OpCode::CA); // 03
+  prg.push_back(OpCode::NO); // 04
+  prg.push_back(OpCode::NO); // 05
+  prg.push_back(OpCode::NO); // 06
+  prg.push_back(OpCode::NO); // 07
+  prg.push_back(OpCode::NO); // 08
+  prg.push_back(OpCode::NO); // 09
+  prg.push_back(OpCode::NO); // 10
+  prg.push_back(OpCode::HS); // 11
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_addrs(), 0);
+  ASSERT_EQ(core.get_ip(), 11);
+  ASSERT_EQ(pop, Cell{7});
+  ASSERT_EQ(core.get_addr_mode(), Zagros::AddressMode::DIRECT);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionConditionalCallWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 0); // 01
+  prg.push_back(OpCode::NT); // 02
+  prg.push_back(OpCode::LB); // 03
+  prg.push_back((uint8_t) 13); // 04
+  prg.push_back(OpCode::CC); // 05
+  prg.push_back(OpCode::NO); // 06
+  prg.push_back(OpCode::NO); // 07
+  prg.push_back(OpCode::NO); // 08
+  prg.push_back(OpCode::NO); // 09
+  prg.push_back(OpCode::NO); // 10
+  prg.push_back(OpCode::NO); // 11
+  prg.push_back(OpCode::NO); // 12
+  prg.push_back(OpCode::HS); // 13
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_addrs(), 0);
+  ASSERT_EQ(core.get_ip(), 13);
+  ASSERT_EQ(pop, Cell{9});
+  ASSERT_EQ(core.get_addr_mode(), Zagros::AddressMode::DIRECT);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionConditionalCallRelativeWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 0); // 01
+  prg.push_back(OpCode::NT); // 02
+  prg.push_back(OpCode::LB); // 03
+  prg.push_back((uint8_t) 8); // 04
+  prg.push_back(OpCode::RL); // 05
+  prg.push_back(OpCode::CC); // 06
+  prg.push_back(OpCode::NO); // 07
+  prg.push_back(OpCode::NO); // 08
+  prg.push_back(OpCode::NO); // 09
+  prg.push_back(OpCode::NO); // 10
+  prg.push_back(OpCode::NO); // 11
+  prg.push_back(OpCode::NO); // 12
+  prg.push_back(OpCode::NO); // 13
+  prg.push_back(OpCode::HS); // 14
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto pop = stack_pop(core.get_addrs(), 0);
+  ASSERT_EQ(core.get_ip(), 14);
+  ASSERT_EQ(pop, Cell{10});
+  ASSERT_EQ(core.get_addr_mode(), Zagros::AddressMode::DIRECT);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+
+TEST(VM, InstructionJumpRelativeWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 7); // 01
+  prg.push_back(OpCode::RL); // 02
+  prg.push_back(OpCode::JU); // 03
+  prg.push_back(OpCode::NO); // 04
+  prg.push_back(OpCode::NO); // 05
+  prg.push_back(OpCode::NO); // 06
+  prg.push_back(OpCode::NO); // 07
+  prg.push_back(OpCode::NO); // 08
+  prg.push_back(OpCode::NO); // 09
+  prg.push_back(OpCode::NO); // 10
+  prg.push_back(OpCode::HS); // 11
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  ASSERT_EQ(core.get_ip(), 11);
+  ASSERT_EQ(core.get_addr_mode(), Zagros::AddressMode::DIRECT);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionConditionalJumpWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 0); // 01
+  prg.push_back(OpCode::NT); // 02
+  prg.push_back(OpCode::LB); // 03
+  prg.push_back((uint8_t) 13); // 04
+  prg.push_back(OpCode::CC); // 05
+  prg.push_back(OpCode::NO); // 06
+  prg.push_back(OpCode::NO); // 07
+  prg.push_back(OpCode::NO); // 08
+  prg.push_back(OpCode::NO); // 09
+  prg.push_back(OpCode::NO); // 10
+  prg.push_back(OpCode::NO); // 11
+  prg.push_back(OpCode::NO); // 12
+  prg.push_back(OpCode::HS); // 13
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  ASSERT_EQ(core.get_ip(), 13);
+  ASSERT_EQ(core.get_addr_mode(), Zagros::AddressMode::DIRECT);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionConditionalJumpRelativeWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 0); // 01
+  prg.push_back(OpCode::NT); // 02
+  prg.push_back(OpCode::LB); // 03
+  prg.push_back((uint8_t) 8); // 04
+  prg.push_back(OpCode::RL); // 05
+  prg.push_back(OpCode::CJ); // 06
+  prg.push_back(OpCode::NO); // 07
+  prg.push_back(OpCode::NO); // 08
+  prg.push_back(OpCode::NO); // 09
+  prg.push_back(OpCode::NO); // 10
+  prg.push_back(OpCode::NO); // 11
+  prg.push_back(OpCode::NO); // 12
+  prg.push_back(OpCode::NO); // 13
+  prg.push_back(OpCode::HS); // 14
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  ASSERT_EQ(core.get_ip(), 14);
+  ASSERT_EQ(core.get_addr_mode(), Zagros::AddressMode::DIRECT);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+TEST(VM, InstructionReturnWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 7); // 01
+  prg.push_back(OpCode::CA); // 02
+  prg.push_back(OpCode::NO); // 03
+  prg.push_back(OpCode::NO); // 04
+  prg.push_back(OpCode::NO); // 05
+  prg.push_back(OpCode::HS); // 06
+  prg.push_back(OpCode::RE); // 07
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto top = core.get_addrs().get_top();
+  ASSERT_EQ(core.get_ip(), 6);
+  ASSERT_EQ(top, 0);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
+
+
+TEST(VM, InstructionCondtionalReturnWorks) {
+  program prg;
+  prg.push_back(OpCode::LB); // 00
+  prg.push_back((uint8_t) 7); // 01
+  prg.push_back(OpCode::CA); // 02
+  prg.push_back(OpCode::NO); // 03
+  prg.push_back(OpCode::NO); // 04
+  prg.push_back(OpCode::NO); // 05
+  prg.push_back(OpCode::HS); // 06
+  prg.push_back(OpCode::LB); // 07
+  prg.push_back((uint8_t) 0); // 08
+  prg.push_back(OpCode::NT); // 09
+  prg.push_back(OpCode::CR); // 10
+  auto vm = loaded_vm(prg);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  auto top = core.get_addrs().get_top();
+  ASSERT_EQ(core.get_ip(), 6);
+  ASSERT_EQ(top, 0);
+  ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
+}
 
 

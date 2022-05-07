@@ -1204,6 +1204,7 @@ class CoreSnapshot {
     this->ip = rhs.ip;
     this->active = rhs.active;
     this->op_mode = rhs.op_mode;
+    this->addr_mode = rhs.addr_mode;
     this->data = rhs.data;
     this->addrs = rhs.addrs;
     this->regs = rhs.regs;
