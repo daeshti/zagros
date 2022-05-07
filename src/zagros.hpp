@@ -130,6 +130,11 @@ class Cell {
 
   // region Constructors
   /**
+   * Default constructor.
+   */
+  constexpr Cell() noexcept: bs{0, 0, 0, 0} {}
+
+  /**
    * A constructor that initializes the register with given bytes.
    */
   constexpr Cell(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) noexcept: bs{b0, b1, b2, b3} {}
@@ -142,20 +147,6 @@ class Cell {
   // Following functions write to all 4 bytes of the `bs` array therefore don't need to initialize the `bs` array.
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
-  /**
-   * A constructor that initializes the register with the given iterator
-   * @tparam Iterator The iterator type.
-   * @param first The iterator to the first element.
-   * @param count The number of elements to copy.
-   */
-  template<typename Iterator>
-  consteval Cell(
-      typename std::iterator_traits<Iterator>::uint8_t first,
-      const size_t count) {
-    size_t n = count <= 4 ? count : 4;
-    std::copy(first, first + n, bs.begin());
-  }
-
   /**
   * A constructor to initialize the register with an int32_t.
    * @param value The value to initialize the register with.
@@ -236,6 +227,14 @@ class Cell {
   }
 
   /**
+   * Gets the value of the register as a size_t
+   * @return Value of the register as a size_t
+   */
+  size_t to_size() const noexcept {
+    return static_cast<size_t>(this->to_uint32());
+  }
+
+  /**
   * Gets the value of the register as a bool.
   * @return Value of the register as a bool.
   */
@@ -251,6 +250,15 @@ class Cell {
   constexpr std::array<uint8_t, 4> to_bytes() const noexcept {
     return bs;
   }
+
+  /**
+   * Gets the value of register as byte.
+   */
+  [[nodiscard]]
+  constexpr uint8_t to_byte() const noexcept {
+    return bs[0];
+  }
+
 // endregion
 
   // region Comparison operations
@@ -260,7 +268,7 @@ class Cell {
    * @param op_mode The operation mode to use.
    * @return True if the register is equal the other register in provided operation mode.
    */
-  [[nodiscard]] consteval Cell equal(const Cell rhs) const noexcept {
+  [[nodiscard]] constexpr Cell equal(const Cell rhs) const noexcept {
     return Cell(bs == rhs.bs);
   }
 
@@ -270,7 +278,7 @@ class Cell {
    * @param op_mode The operation mode to use.
    * @return True if the register is not equal the rhs register in provided operation mode.
    */
-  [[nodiscard]] consteval Cell not_equal(const Cell rhs) const noexcept {
+  [[nodiscard]] constexpr Cell not_equal(const Cell rhs) const noexcept {
     return Cell(bs != rhs.bs);
   }
 
@@ -514,7 +522,7 @@ class Cell {
    * @return a pair of (Error::InvalidFloatOperation, _) if any of the arguments is a float,
    * otherwise a pair of (Error::None, Result).
    */
-  [[nodiscard]] std::pair<Error, Cell> bitwise_shift_left(const Cell rhs, OpMode op_mode) const noexcept {
+  [[nodiscard]] result<Cell> bitwise_shift_left(const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
         return {Error::None, Cell(this->to_int32() << rhs.to_int32())};
@@ -535,7 +543,7 @@ class Cell {
    * @return a pair of (Error::InvalidFloatOperation, _) if any of the arguments is a float,
    * otherwise a pair of (Error::None, Result).
    */
-  [[nodiscard]] std::pair<Error, Cell> bitwise_shift_right(const Cell rhs, OpMode op_mode) const noexcept {
+  [[nodiscard]] result<Cell> bitwise_shift_right(const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
         return {Error::None, Cell(this->to_int32() >> rhs.to_int32())};
@@ -575,10 +583,10 @@ template<size_t S>
 class StackSnapshot {
  private:
   /// The stack`s data.
-  const std::array<uint32_t, S> arr;
+  std::array<Cell, S> arr;
 
   /// The stack`s top index.
-  const size_t top;
+  size_t top;
 
  public:
   /**
@@ -591,13 +599,27 @@ class StackSnapshot {
    * @param arr The stack`s arr.
    * @param top The stack`s top index.
    */
-  constexpr StackSnapshot(std::array<uint32_t, S> arr, size_t top) noexcept: arr(arr), top(top) {}
+  constexpr StackSnapshot(std::array<Cell, S> arr, size_t top) noexcept: arr(arr), top(top) {}
 
   /**
-   * Get the stack`s data.
-   * @return The stack`s data.
+   * Copy Constructor
    */
-  constexpr std::array<uint32_t, S> get_arr() const noexcept {
+  constexpr StackSnapshot(const StackSnapshot &rhs) noexcept: arr{rhs.arr}, top{rhs.top} {};
+
+  /**
+   * Assignment Operator
+   */
+  auto operator=(const StackSnapshot &rhs) noexcept -> StackSnapshot & {
+    this->arr = rhs.arr;
+    this->top = rhs.top;
+    return *this;
+  }
+
+    /**
+     * Get the stack`s data.
+     * @return The stack`s data.
+     */
+  constexpr std::array<Cell, S> get_arr() const noexcept {
     return arr;
   }
 
@@ -620,7 +642,7 @@ template<size_t S>
 class DataStack {
  private:
   /// The stack`s data.
-  std::array<uint32_t, S> arr;
+  std::array<Cell, S> arr;
 
   /// The stack`s top index.
   size_t top = 0;
@@ -651,7 +673,7 @@ class DataStack {
    * Pushes a value onto the stack.
    * @param value The value to be pushed.
    */
-  auto push(uint32_t value) noexcept -> void {
+  auto push(Cell value) noexcept -> void {
     arr[top++] = value;
   }
 
@@ -659,7 +681,7 @@ class DataStack {
    * Pops a value off the stack.
    * @return The value popped off the stack.
    */
-  auto pop() noexcept -> uint32_t {
+  auto pop() noexcept -> Cell {
     return arr[--top];
   }
 
@@ -686,7 +708,7 @@ template<size_t S>
 class AddressStack {
  private:
   /// The stack`s data.
-  std::array<uint32_t, S> arr;
+  std::array<Cell, S> arr;
 
   /// The stack`s top index.
   size_t top = 0;
@@ -702,7 +724,7 @@ class AddressStack {
    * @param value The value to be pushed.
    * @return Success if the operation is successful, Error otherwise.
    */
-  auto push(uint32_t value) noexcept -> result<> {
+  auto push(Cell value) noexcept -> result<> {
     if (top >= S) {
       return fail(Error::AddressStackOverflow);
     }
@@ -714,9 +736,9 @@ class AddressStack {
    * Pops a value off the stack.
    * @return The value if the operation is successful, Error otherwise.
    */
-  auto pop() noexcept -> result<uint32_t> {
+  auto pop() noexcept -> result<Cell> {
     if (top == 0) {
-      return fail<uint32_t>(Error::AddressStackUnderflow);
+      return fail<Cell>(Error::AddressStackUnderflow);
     }
     const auto value = arr[--top];
     return success(value);
@@ -746,7 +768,7 @@ template<size_t S>
 class RegisterBankSnapshot {
  private:
   /// The bank`s data.
-  const std::array<uint32_t, S> arr;
+  std::array<Cell, S> arr;
 
  public:
   /**
@@ -759,13 +781,26 @@ class RegisterBankSnapshot {
    * @param arr The bank`s data.
    * @param top The bank`s top index.
    */
-  constexpr explicit RegisterBankSnapshot(std::array<uint32_t, S> arr) noexcept: arr(arr) {}
+  constexpr explicit RegisterBankSnapshot(std::array<Cell, S> arr) noexcept: arr(arr) {}
+
+  /**
+ * Copy Constructor
+ */
+  constexpr RegisterBankSnapshot(const RegisterBankSnapshot &rhs) noexcept: arr{rhs.arr} {};
+
+  /**
+   * Assignment Operator
+   */
+  auto operator=(const RegisterBankSnapshot &rhs) noexcept -> RegisterBankSnapshot & {
+    this->arr = rhs.arr;
+    return *this;
+  }
 
   /**
    * Get the banks`s data.
    * @return The banks`s data.
    */
-  constexpr std::array<uint32_t, S> get_arr() const noexcept {
+  constexpr std::array<Cell, S> get_arr() const noexcept {
     return arr;
   }
 };
@@ -778,13 +813,13 @@ template<size_t S>
 class RegisterBank {
  private:
   /// The bank`s arr.
-  std::array<uint32_t, S> arr;
+  std::array<Cell, S> arr;
  public:
   /**
    * Constructs a new register bank. All registers are initialized to 0.
    */
   constexpr RegisterBank() noexcept {
-    std::fill(arr.begin(), arr.end(), 0);
+    std::fill(arr.begin(), arr.end(), Cell{});
   }
 
   /**
@@ -792,9 +827,9 @@ class RegisterBank {
    * @param id The register`s id.
    * @return The value if the operation is successful, Error otherwise.
    */
-  [[nodiscard]] auto read(size_t id) const noexcept -> result<uint32_t> {
+  [[nodiscard]] auto read(size_t id) const noexcept -> result<Cell> {
     if (id >= S) {
-      return fail<uint32_t>(Error::IllegalRegisterId);
+      return fail<Cell>(Error::IllegalRegisterId);
     }
     const auto value = arr[id];
     return success(value);
@@ -806,7 +841,7 @@ class RegisterBank {
    * @param value The value to be set.
    * @return Success if the operation is successful, Error otherwise.
    */
-  auto write(size_t id, uint32_t value) noexcept -> result<> {
+  auto write(size_t id, Cell value) noexcept -> result<> {
     if (id >= S) {
       return fail(Error::IllegalRegisterId);
     }
@@ -818,7 +853,7 @@ class RegisterBank {
    * Clears the bank.
    */
   auto clear() noexcept -> void {
-    std::fill(arr.begin(), arr.end(), 0);
+    std::fill(arr.begin(), arr.end(), Cell{});
   }
 
   /**
@@ -893,19 +928,28 @@ class Memory {
   }
 
   /**
-   * Sets the value of a memory location.
-   * @tparam T The type of the value.
-   * @param addr The addr.
-   * @return The bytes if `addr` is in range, Error otherwise.
+   * Reads bytes from memory location
+   * @tparam BS The count of bytes to read
+   * @param addr The address of the memory location
+   * @return A success result with the bytes if `addr` is legal,
+   * otherwise and error result with `Error::IllegalMemoryAddress`.
    */
-  template<typename T>
-  [[nodiscard]] auto read_bytes(size_t addr) const noexcept -> result<T> {
-    T dst{};
-    if (addr + sizeof(T) > S) {
-      return {Error::IllegalMemoryAddress, dst};
+  template<size_t BS>
+  [[nodiscard]] auto read_bytes(size_t addr) const noexcept -> result<Cell> {
+    static_assert(BS <= 4, "Cell don't have more than 4 bytes.");
+    if (addr + BS > S) {
+      return fail<Cell>(Error::IllegalMemoryAddress);
     }
-    std::copy_n(arr.begin() + addr, sizeof(T), reinterpret_cast<uint8_t *>(&dst));
-    return success(dst);
+    // Uninitialized because all bytes will be written to.
+    std::array<uint8_t, 4> dst; // NOLINT(cppcoreguidelines-pro-type-member-init)
+    size_t i = 0;
+    for (; i < BS; ++i) {
+      dst[i] = arr[addr + i];
+    }
+    for (; i < 4; ++i) {
+      dst[i] = 0;
+    }
+    return success(Cell{dst});
   }
 
   /**
@@ -915,33 +959,38 @@ class Memory {
    * @param orig The origin addrs.
    * @return The result of the comparison if operation is successful, Error otherwise.
    */
-  [[nodiscard]] auto compare_block(size_t len, size_t dst, size_t orig) const noexcept -> result<bool> {
+  [[nodiscard]] auto compare_block(size_t len, size_t dst, size_t orig) const noexcept -> result<Cell> {
     if (dst + len > S) {
-      return {Error::IllegalMemoryAddress, false};
+      return fail<Cell>(Error::IllegalMemoryAddress);
     }
     if (orig + len > S) {
-      return {Error::IllegalMemoryAddress, false};
+      return fail<Cell>(Error::IllegalMemoryAddress);
     }
     if (std::equal(arr.begin() + dst, arr.begin() + dst + len, arr.begin() + orig)) {
-      return success(true);
+      return success(Cell{true});
     }
-    return success(true);
+    return success(Cell{true});
   }
 
   /**
    * Sets the value of a memory location.
-   * @tparam T The type of the value.
-   * @param address The addrs.
+   * @tparam BS The number of bytes to be copied from the value.
+   * @param addr The addrs.
    * @param value The value.
-   * @return Unit if the addrs is in range and it can contain the value, Error otherwise.
-   */
-  template<typename T>
-  auto write_bytes(size_t address, T value) noexcept -> result<> {
-    if (address + sizeof(T) > S) {
+   * @return A success result if `addr` is legal,
+   * otherwise and error result with `Error::IllegalMemoryAddress`.
+   * */
+  template<size_t BS>
+  auto write_bytes(size_t addr, Cell value) noexcept -> result<> {
+    static_assert(BS <= 4, "Cell don't have more than 4 bytes.");
+    if (addr + BS > S) {
       return fail(Error::IllegalMemoryAddress);
     }
-    std::copy_n(reinterpret_cast<uint8_t *>(&value), sizeof(T), arr.begin() + address);
-    return {};
+    auto src = value.to_bytes();
+    for (int i = 0; i < BS; ++i) {
+      arr[addr + i] = src[i];
+    }
+    return success();
   }
 
   /**
@@ -955,9 +1004,8 @@ class Memory {
     if (dst + len > S || orig + len > S) {
       return fail(Error::IllegalMemoryAddress);
     }
-//    std::copy_n(arr.begin() + dst, len, arr.begin() + orig);
     std::copy_n(arr.begin(), len, arr.begin() + dst);
-    return {};
+    return success();
   }
 
   /**
@@ -997,7 +1045,7 @@ template<size_t S>
 class InterruptTableSnapshot {
  private:
   /// The table`s data
-  std::array<uint32_t, S> arr{};
+  std::array<Cell, S> arr{};
 
  public:
   /**
@@ -1009,13 +1057,13 @@ class InterruptTableSnapshot {
    * Constructs a snapshot of the interrupt table.
    * @param data The table`s arr.
    */
-  constexpr explicit InterruptTableSnapshot(std::array<uint32_t, S> arr) noexcept: arr(arr) {}
+  constexpr explicit InterruptTableSnapshot(std::array<Cell, S> arr) noexcept: arr(arr) {}
 
   /**
    * Returns the table`s arr.
    * @return The table`s arr.
    */
-  [[nodiscard]] auto get_arr() const noexcept -> std::array<uint32_t, S> {
+  [[nodiscard]] auto get_arr() const noexcept -> std::array<Cell, S> {
     return arr;
   }
 };
@@ -1028,7 +1076,7 @@ template<size_t S>
 class InterruptTable {
  private:
   /// The table`s arr
-  std::array<uint32_t, S> data{};
+  std::array<Cell, S> data{};
 
  public:
   /**
@@ -1038,7 +1086,7 @@ class InterruptTable {
    * so the system will halt if an unset interrupt is triggered.
    */
   InterruptTable() noexcept {
-    std::fill(data.begin(), data.begin() + S, 0);
+    std::fill(data.begin(), data.begin() + S, Cell{});
   }
 
   /**
@@ -1046,9 +1094,9 @@ class InterruptTable {
    * @param id The interrupt id.
    * @return The interrupt handler addrs if the id is valid, Error otherwise.
    */
-  [[nodiscard]] auto get(size_t id) const noexcept -> result<uint32_t> {
+  [[nodiscard]] auto get(size_t id) const noexcept -> result<Cell> {
     if (id >= S) {
-      return fail<uint32_t>(Error::IllegalInterruptId);
+      return fail<Cell>(Error::IllegalInterruptId);
     }
     const auto addr = data[id];
     return success(addr);
@@ -1060,9 +1108,9 @@ class InterruptTable {
    * @param addr The interrupt handler addrs.
    * @return Unit if the id is valid, Error otherwise.
    */
-  auto set(size_t id, uint32_t addr) noexcept -> result<uint32_t> {
+  auto set(size_t id, Cell addr) noexcept -> result<Cell> {
     if (id >= S) {
-      return fail<uint32_t>(Error::IllegalInterruptId);
+      return fail<Cell>(Error::IllegalInterruptId);
     }
     data[id] = addr;
     return success(addr);
@@ -1072,7 +1120,7 @@ class InterruptTable {
    * Clears the table.
    */
   auto clear() noexcept -> void {
-    std::fill(data.begin(), data.end(), 0);
+    std::fill(data.begin(), data.end(), Cell{});
   }
 
   /**
@@ -1131,8 +1179,7 @@ class CoreSnapshot {
   /**
    * Default constructor.
    */
-  constexpr CoreSnapshot() noexcept
-      : ip(0), active(false), op_mode(OpMode::SIGNED), addr_mode(AddressMode::DIRECT), data(), addrs(), regs() {}
+  constexpr CoreSnapshot() noexcept = default;
 
   /**
    * Constructs a snapshot of the core.
@@ -1149,6 +1196,25 @@ class CoreSnapshot {
       : ip{ip}, active{active}, op_mode{op_mode}, addr_mode{addr_mode},
         data{data}, addrs{addrs}, regs{regs} {
   }
+
+  /**
+   * Assignment operator.
+   */
+  auto operator=(const CoreSnapshot &rhs) noexcept -> CoreSnapshot & {
+    this->ip = rhs.ip;
+    this->active = rhs.active;
+    this->op_mode = rhs.op_mode;
+    this->data = rhs.data;
+    this->addrs = rhs.addrs;
+    this->regs = rhs.regs;
+    return *this;
+  };
+
+  /**
+   * Copy constructor.
+   * @param rhs The rhs snapshot.
+   */
+  constexpr CoreSnapshot(const CoreSnapshot &rhs) noexcept = default;
 
   /**
    * Gets the instruction pointer.
@@ -1234,10 +1300,6 @@ class Core {
 
   /// The current addrs mode.
   AddressMode addr_mode = AddressMode::DIRECT;
-
-//    DataStack<DS> arr;
-//    AddressStack<AS> addrs;
-//    RegisterBank<RS> regs;
 
   /// The arr stack.
   DataStack<DS> data;
@@ -1350,6 +1412,10 @@ class VM {
    * Selects the next active core and sets the `cur_core_id` instance variable.
    */
   auto sel_next_core() noexcept -> void {
+    if constexpr(CS == 1) {
+      return;
+    }
+
     // Look from current core to the end of the array
     for (size_t next = cur_core_id + 1; next < CS; next++) {
       if (cores[next].active) {
@@ -1384,16 +1450,15 @@ class VM {
   }
 
   /**
-   * This pushes the T value in the following memory location to the stack.
+   * This pushes the value in the following memory location to the stack.
    * It will increment the `ip` and push the arr value to the stack.
-   * @tparam T The type of the value to push.
+   * @tparam S The size of value to push.
    * @param addr_offset The addrs offset from `ip` to look for the value.
    * @param i_len Length of the instruction.
-   * @param mapper A mapper from `T` to uint32_t.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  template<typename T>
-  auto i_load(uint32_t addr_offset, size_t i_len, uint32_t mapper(const T)) -> result<> {
+  template<size_t S>
+  auto i_load(size_t addr_offset, size_t i_len) -> result<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -1404,17 +1469,15 @@ class VM {
     }
 
     // Get the addrs to look for the value.
-    const auto obj_addr = core.ip + addr_offset;
+    const auto cell_addr = core.ip + addr_offset;
     // Read the value from the memory.
-    const auto &[read_err, obj] = mem.template read_bytes<T>(obj_addr);
+    const auto &[read_err, cell] = mem.template read_bytes<S>(cell_addr);
     if (read_err != Error::None) {
       return {read_err, Unit{}};
     }
 
-    // Convert the value to uint32_t.
-    const auto data = mapper(obj);
     // Push the value to the stack.
-    core.data.push(data);
+    core.data.push(cell);
 
     // Increment the ip.
     core.ip += i_len;
@@ -1430,9 +1493,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_load_word() noexcept -> result<> {
-    return i_load<uint32_t>(4, 8, [](uint32_t x) {
-      return x;
-    });
+    return i_load<4>(4, 8);
   }
 
   /**
@@ -1441,9 +1502,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_load_half() noexcept -> result<> {
-    return i_load<uint16_t>(1, 3, [](uint16_t x) {
-      return static_cast<uint32_t>(x);
-    });
+    return i_load<2>(1, 3);
   }
 
   /**
@@ -1452,19 +1511,16 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_load_byte() noexcept -> result<> {
-    return i_load<uint8_t>(1, 2, [](uint8_t x) {
-      return static_cast<uint32_t>(x);
-    });
+    return i_load<1>(1, 2);
   }
 
   /**
    * Fetches a T value from memory.
-   * @tparam T The type of the value to fetch.
-   * @param mapper The mapper from `T` to uint32_t.
+   * @tparam S The size of value to fetch.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  template<typename T>
-  auto i_fetch(uint32_t mapper(const T)) -> result<> {
+  template<size_t S>
+  auto i_fetch() -> result<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -1475,17 +1531,15 @@ class VM {
     }
 
     // Get the addrs to look for the value.
-    const auto obj_addr = core.data.pop();
+    const auto cell_addr = core.data.pop();
     // Read the value from the memory.
-    const auto &[read_err, obj] = mem.template read_bytes<T>(obj_addr);
+    const auto &[read_err, cell] = mem.template read_bytes<S>(cell_addr.to_size());
     if (read_err != Error::None) {
       return {read_err, Unit{}};
     }
 
-    // Convert the value to uint32_t.
-    const auto word = mapper(obj);
     // Push the value to the stack.
-    core.data.push(word);
+    core.data.push(cell);
 
     // Increment the ip.
     core.ip += 1;
@@ -1500,9 +1554,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_fetch_word() noexcept -> result<> {
-    return i_fetch<uint32_t>([](uint32_t x) {
-      return x;
-    });
+    return i_fetch<4>();
   }
 
   /**
@@ -1510,9 +1562,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_fetch_half() noexcept -> result<> {
-    return i_fetch<uint16_t>([](uint16_t x) {
-      return static_cast<uint32_t>(x);
-    });
+    return i_fetch<2>();
   }
 
   /**
@@ -1520,19 +1570,17 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_fetch_byte() noexcept -> result<> {
-    return i_fetch<uint8_t>([](uint8_t x) {
-      return static_cast<uint32_t>(x);
-    });
+    return i_fetch<1>();
   }
 
   /**
    * Stores a T value to memory.
-   * @tparam T The type of the value to store.
+   * @tparam SThe size of the value to store.
    * @param mapper The mapper from `T` to uint32_t.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  template<typename T>
-  auto i_store(uint32_t mapper(const T)) -> result<> {
+  template<size_t S>
+  auto i_store() -> result<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -1543,13 +1591,12 @@ class VM {
     }
 
     // Get the addrs to look for the value.
-    const auto obj_addr = core.data.pop();
+    const auto cell_addr = core.data.pop();
     // Get the value to store.
-    const auto obj = core.data.pop();
-    // Convert the value to uint32_t.
-    const auto word = mapper(obj); // TODO: Find a solution
+    const auto cell = core.data.pop();
+
     // Write the value to the memory.
-    const auto &[write_err, _2] = mem.template write_bytes<T>(obj_addr, word);
+    const auto &[write_err, _2] = mem.template write_bytes<S>(cell_addr.to_size(), cell);
     if (write_err != Error::None) {
       return {write_err, Unit{}};
     }
@@ -1567,9 +1614,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_store_word() noexcept -> result<> {
-    return i_store<uint32_t>([](uint32_t x) {
-      return x;
-    });
+    return i_store<4>();
   }
 
   /**
@@ -1577,9 +1622,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_store_half() noexcept -> result<> {
-    return i_store<uint16_t>([](uint16_t x) {
-      return static_cast<uint32_t>(x);
-    });
+    return i_store<2>();
   }
 
   /**
@@ -1587,9 +1630,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_store_byte() noexcept -> result<> {
-    return i_store<uint8_t>([](uint8_t x) {
-      return static_cast<uint32_t>(x);
-    });
+    return i_store<1>();
   }
 
   /**
@@ -1735,115 +1776,12 @@ class VM {
   }
 
   /**
-   * Does the binary operations based on the operation mode.
-   * @param signed_op The signed operation.
-   * @param unsigned_op The unsigned operation.
-   * @param float_op The float operation.
-   * @return Unit if the operation was successful. Error otherwise.
-   */
-  auto i_binary_op(
-      uint32_t signed_op(uint32_t, uint32_t),
-      uint32_t unsigned_op(uint32_t, uint32_t),
-      uint32_t float_op(uint32_t, uint32_t)
-  ) noexcept -> result<> {
-    // Get the current core
-    auto &core = cores[cur_core_id];
-
-    // Guard the stack for 2 pops and 1 push.
-    const auto &[guard_err, _1] = core.data.guard(2, 1);
-    if (guard_err != Error::None) {
-      return {guard_err, Unit{}};
-    }
-
-    // Get the values to operate on.
-    const auto right = core.data.pop();
-    const auto left = core.data.pop();
-
-    // Compute the result based on the operation mode.
-    uint32_t result;
-    switch (core.op_mode) {
-      case OpMode::SIGNED: {
-        result = signed_op(left, right);
-        break;
-      }
-      case OpMode::UNSIGNED: {
-        result = unsigned_op(left, right);
-        break;
-      }
-      case OpMode::FLOAT: {
-        result = float_op(left, right);
-        break;
-      }
-    }
-    // Push the result.
-    core.data.push(result);
-
-    // Increment the ip.
-    core.ip += 1;
-    // Set the operation mode to signed.
-    core.op_mode = OpMode::SIGNED;
-
-    return success();
-  }
-
-  /**
-   * Does the binary operations based on the operation mode.
-   * Returns error if operation mode is floating point mode.
-   * @param signed_op The signed operation.
-   * @param unsigned_op The unsigned operation.
-   * @return Unit if the operation was successful. Error otherwise.
-   */
-  auto i_binary_op(
-      uint32_t signed_op(uint32_t, uint32_t),
-      uint32_t unsigned_op(uint32_t, uint32_t)
-  ) noexcept -> result<> {
-    // Get the current core
-    auto &core = cores[cur_core_id];
-
-    // Guard the stack for 2 pops and 1 push.
-    const auto &[guard_err, _1] = core.data.guard(2, 1);
-    if (guard_err != Error::None) {
-      return {guard_err, Unit{}};
-    }
-
-    // Get the values to operate on.
-    const auto right = core.data.pop();
-    const auto left = core.data.pop();
-
-    // Compute the result based on the operation mode.
-    uint32_t result;
-    switch (core.op_mode) {
-      case OpMode::SIGNED: {
-        result = signed_op(left, right);
-        break;
-      }
-      case OpMode::UNSIGNED: {
-        result = unsigned_op(left, right);
-        break;
-      }
-      case OpMode::FLOAT: {
-        return fail(Error::InvalidFloatOperation);
-      }
-    }
-    // Push the result.
-    core.data.push(result);
-
-    // Increment the ip.
-    core.ip += 1;
-    // Set the operation mode to signed.
-    core.op_mode = OpMode::SIGNED;
-
-    return success();
-  }
-
-  /**
    * Does the binary operation in unsigned mode.
-   * @param signed_op The signed operation.
-   * @param unsigned_op The unsigned operation.
+   * @param op The operation.
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_binary_op(
-      uint32_t unsigned_op(uint32_t, uint32_t)
+      std::function<Cell(const Cell &, const Cell)> op
   ) noexcept -> result<> {
     // Get the current core
     auto &core = cores[cur_core_id];
@@ -1858,7 +1796,79 @@ class VM {
     const auto right = core.data.pop();
     const auto left = core.data.pop();
     // Compute the result.
-    uint32_t result = unsigned_op(left, right);
+    Cell result = op(left, right);
+
+    // Push the result.
+    core.data.push(result);
+
+    // Increment the ip.
+    core.ip += 1;
+    // Set the operation mode to signed.
+    core.op_mode = OpMode::SIGNED;
+
+    return success();
+  }
+
+  /**
+ * Does the binary operation in unsigned mode.
+ * @param op The operation.
+ * @return Unit if the operation was successful. Error otherwise.
+ */
+  auto i_binary_op(
+      std::function<Cell(const Cell &, const Cell, const OpMode)> op
+  ) noexcept -> result<> {
+    // Get the current core
+    auto &core = cores[cur_core_id];
+
+    // Guard the stack for 2 pops and 1 push.
+    const auto &[guard_err, _1] = core.data.guard(2, 1);
+    if (guard_err != Error::None) {
+      return {guard_err, Unit{}};
+    }
+
+    // Get the values to operate on.
+    const auto right = core.data.pop();
+    const auto left = core.data.pop();
+    // Compute the result.
+    const auto result = op(left, right, core.op_mode);
+
+    // Push the result.
+    core.data.push(result);
+
+    // Increment the ip.
+    core.ip += 1;
+    // Set the operation mode to signed.
+    core.op_mode = OpMode::SIGNED;
+
+    return success();
+  }
+
+  /**
+ * Does the binary operation in unsigned mode.
+ * @param op The operation.
+ * @param unsigned_op The unsigned operation.
+ * @return Unit if the operation was successful. Error otherwise.
+ */
+  auto i_binary_op(
+      std::function<result<Cell>(const Cell &, const Cell, const OpMode)> op
+  ) noexcept -> result<> {
+    // Get the current core
+    auto &core = cores[cur_core_id];
+
+    // Guard the stack for 2 pops and 1 push.
+    const auto &[guard_err, _1] = core.data.guard(2, 1);
+    if (guard_err != Error::None) {
+      return {guard_err, Unit{}};
+    }
+
+    // Get the values to operate on.
+    const auto right = core.data.pop();
+    const auto left = core.data.pop();
+    // Compute the result.
+    const auto &[error, result] = op(left, right, core.op_mode);
+    if (error != Error::None) {
+      return {guard_err, Unit{}};
+    }
     // Push the result.
     core.data.push(result);
 
@@ -1875,9 +1885,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_equal() noexcept -> result<> {
-    return i_binary_op([](uint32_t a, uint32_t b) {
-      return static_cast<uint32_t>(a == b);
-    });
+    return i_binary_op(&Cell::equal);
   }
 
   /**
@@ -1885,9 +1893,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_not_equal() noexcept -> result<> {
-    return i_binary_op([](uint32_t a, uint32_t b) {
-      return static_cast<uint32_t> (a != b);
-    });
+    return i_binary_op(&Cell::not_equal);
   }
 
   /**
@@ -1895,30 +1901,8 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_less_than() noexcept -> result<> {
-    return i_binary_op(
-        [](uint32_t a, uint32_t b) {
-          // convert a to a signed int
-          int32_t left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a signed int
-          int32_t right;
-          memcpy(&right, &b, sizeof(int32_t));
-          auto result = left < right;
-          return static_cast<uint32_t> (result);
-        },
-        [](uint32_t a, uint32_t b) {
-          return static_cast<uint32_t> (a < b);
-        },
-        [](uint32_t a, uint32_t b) {
-          // convert a to a float
-          float left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a float
-          float right;
-          memcpy(&right, &b, sizeof(int32_t));
-          auto result = left < right;
-          return static_cast<uint32_t> (result);
-        });
+    // Cell (Cell*)(Cell, OpMode)
+    return i_binary_op(&Cell::less_than);
   }
 
   /**
@@ -1926,30 +1910,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_greater_than() noexcept -> result<> {
-    return i_binary_op(
-        [](uint32_t a, uint32_t b) {
-          // convert a to a signed int
-          int32_t left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a signed int
-          int32_t right;
-          memcpy(&right, &b, sizeof(int32_t));
-          auto result = left > right;
-          return static_cast<uint32_t> (result);
-        },
-        [](uint32_t a, uint32_t b) {
-          return static_cast<uint32_t> (a > b);
-        },
-        [](uint32_t a, uint32_t b) {
-          // convert a to a float
-          float left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a float
-          float right;
-          memcpy(&right, &b, sizeof(int32_t));
-          auto result = left > right;
-          return static_cast<uint32_t> (result);
-        });
+    return i_binary_op(&Cell::greater_than);
   }
 
   /**
@@ -1957,36 +1918,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_add() noexcept -> result<> {
-    return i_binary_op(
-        [](uint32_t a, uint32_t b) {
-          // convert a to a signed int
-          int32_t left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a signed int
-          int32_t right;
-          memcpy(&right, &b, sizeof(int32_t));
-          int32_t result = left + right;
-          // convert the result to a uint32_t
-          uint32_t u_result;
-          memcpy(&u_result, &result, sizeof(int32_t));
-          return u_result;
-        },
-        [](uint32_t a, uint32_t b) {
-          return static_cast<uint32_t> (a + b);
-        },
-        [](uint32_t a, uint32_t b) {
-          // convert a to a float
-          float left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a float
-          float right;
-          memcpy(&right, &b, sizeof(int32_t));
-          float result = left + right;
-          // convert the result to a uint32_t
-          uint32_t u_result;
-          memcpy(&u_result, &result, sizeof(int32_t));
-          return u_result;
-        });
+    return i_binary_op(&Cell::add);
   }
 
   /**
@@ -1994,36 +1926,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_subtract() noexcept -> result<> {
-    return i_binary_op(
-        [](uint32_t a, uint32_t b) {
-          // convert a to a signed int
-          int32_t left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a signed int
-          int32_t right;
-          memcpy(&right, &b, sizeof(int32_t));
-          int32_t result = left - right;
-          // convert the result to a uint32_t
-          uint32_t u_result;
-          memcpy(&u_result, &result, sizeof(int32_t));
-          return u_result;
-        },
-        [](uint32_t a, uint32_t b) {
-          return static_cast<uint32_t> (a - b);
-        },
-        [](uint32_t a, uint32_t b) {
-          // convert a to a float
-          float left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a float
-          float right;
-          memcpy(&right, &b, sizeof(int32_t));
-          float result = left - right;
-          // convert the result to a uint32_t
-          uint32_t u_result;
-          memcpy(&u_result, &result, sizeof(int32_t));
-          return u_result;
-        });
+    return i_binary_op(&Cell::subtract);
   }
 
   /**
@@ -2031,36 +1934,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_multiply() noexcept -> result<> {
-    return i_binary_op(
-        [](uint32_t a, uint32_t b) {
-          // convert a to a signed int
-          int32_t left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a signed int
-          int32_t right;
-          memcpy(&right, &b, sizeof(int32_t));
-          int32_t result = left * right;
-          // convert the result to a uint32_t
-          uint32_t u_result;
-          memcpy(&u_result, &result, sizeof(int32_t));
-          return u_result;
-        },
-        [](uint32_t a, uint32_t b) {
-          return static_cast<uint32_t> (a * b);
-        },
-        [](uint32_t a, uint32_t b) {
-          // convert a to a float
-          float left;
-          memcpy(&left, &a, sizeof(int32_t));
-          // convert b to a float
-          float right;
-          memcpy(&right, &b, sizeof(int32_t));
-          float result = left * right;
-          // convert the result to a uint32_t
-          uint32_t u_result;
-          memcpy(&u_result, &result, sizeof(int32_t));
-          return u_result;
-        });
+    return i_binary_op(&Cell::multiply);
   }
 
   /**
@@ -2082,46 +1956,9 @@ class VM {
     const auto left = core.data.pop();
 
     // Compute the values based on the operating mode.
-    uint32_t modulo;
-    uint32_t quotient;
-    switch (core.op_mode) {
-      case OpMode::SIGNED: {
-        // Convert the values to signed ints.
-        int32_t s_left;
-        memcpy(&s_left, &left, sizeof(int32_t));
-        int32_t s_right;
-        memcpy(&s_right, &right, sizeof(int32_t));
-        // Check for division by zero.
-        if (s_right == 0) {
-          return fail(Error::DivisionByZero);
-        }
-        int32_t s_modulo = s_left % s_right;
-        // Convert the modulo to a uint32_t.
-        memcpy(&modulo, &s_modulo, sizeof(int32_t));
-        int32_t s_quotient = s_left / s_right;
-        // Convert the quotient to a uint32_t.
-        memcpy(&quotient, &s_quotient, sizeof(int32_t));
-        break;
-      }
-      case OpMode::UNSIGNED: {
-        modulo = left % right;
-        quotient = left / right;
-        break;
-      }
-      case OpMode::FLOAT: {
-        // Convert the values to floats.
-        float f_left;
-        memcpy(&f_left, &left, sizeof(int32_t));
-        float f_right;
-        memcpy(&f_right, &right, sizeof(int32_t));
-        float f_modulo = fmod(f_left, f_right);
-        // Convert the modulo to a uint32_t.
-        memcpy(&modulo, &f_modulo, sizeof(int32_t));
-        // Convert the quotient to a uint32_t.
-        float f_quotient = f_left / f_right;
-        memcpy(&quotient, &f_quotient, sizeof(int32_t));
-        break;
-      }
+    auto const &[err, modulo, quotient] = left.divide_remainder(right, core.op_mode);
+    if (err != Error::None) {
+      return {err, Unit{}};
     }
 
     // Push the results onto the stack.
@@ -2145,7 +1982,7 @@ class VM {
     // Get the current core
     auto &core = cores[cur_core_id];
 
-    // Guard the stack for 3 pops and 2 pushes.
+    // Guard the stack for 2 pops and 2 pushes.
     const auto &[guard_err, _1] = core.data.guard(3, 2);
     if (guard_err != Error::None) {
       return {guard_err, Unit{}};
@@ -2153,61 +1990,20 @@ class VM {
 
     // Get the values from the stack
     const auto right = core.data.pop();
-    const auto middle = core.data.pop();
+    const auto mul = core.data.pop();
     const auto left = core.data.pop();
 
     // Compute the values based on the operating mode.
-    uint32_t modulo;
-    uint32_t quotient;
-    switch (core.op_mode) {
-      case OpMode::SIGNED: {
-        // Convert the values to signed ints.
-        int32_t s_left;
-        memcpy(&s_left, &left, sizeof(int32_t));
-        int32_t s_middle;
-        memcpy(&s_middle, &middle, sizeof(int32_t));
-        int32_t s_right;
-        memcpy(&s_right, &right, sizeof(int32_t));
-        // Check for division by zero.
-        if (s_right == 0) {
-          return fail(Error::DivisionByZero);
-        }
-        int32_t s_modulo = (s_left * s_middle) % s_right;
-        // Convert the modulo to a uint32_t.
-        memcpy(&modulo, &s_modulo, sizeof(int32_t));
-        int32_t s_quotient = (s_left * s_middle) / s_right;
-        // Convert the quotient to a uint32_t.
-        memcpy(&quotient, &s_quotient, sizeof(int32_t));
-        break;
-      }
-      case OpMode::UNSIGNED: {
-        modulo = left % right;
-        quotient = left / right;
-        break;
-      }
-      case OpMode::FLOAT: {
-        // Convert the values to floats.
-        float f_left;
-        memcpy(&f_left, &left, sizeof(int32_t));
-        float f_middle;
-        memcpy(&f_middle, &middle, sizeof(int32_t));
-        float f_right;
-        memcpy(&f_right, &right, sizeof(int32_t));
-        float f_modulo = fmod(f_left * f_middle, f_right);
-        // Convert the modulo to a uint32_t.
-        memcpy(&modulo, &f_modulo, sizeof(int32_t));
-        float f_quotient = (f_left * f_middle) / f_right;
-        // Convert the quotient to a uint32_t.
-        memcpy(&quotient, &f_quotient, sizeof(int32_t));
-        break;
-      }
+    auto const &[err, modulo, quotient] = left.multiply_divide_remainder(mul, right, core.op_mode);
+    if (err != Error::None) {
+      return {err, Unit{}};
     }
 
     // Push the results onto the stack.
     core.data.push(modulo);
     core.data.push(quotient);
 
-    // Increment the ip.
+    // Return success.
     core.ip += 1;
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
@@ -2220,9 +2016,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_and() noexcept -> result<> {
-    return i_binary_op([](uint32_t a, uint32_t b) {
-      return (a & b);
-    });
+    return i_binary_op(&Cell::bitwise_and);
   }
 
   /**
@@ -2230,9 +2024,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_or() noexcept -> result<> {
-    return i_binary_op([](uint32_t a, uint32_t b) {
-      return (a | b);
-    });
+    return i_binary_op(&Cell::bitwise_or);
   }
 
   /**
@@ -2240,9 +2032,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_xor() noexcept -> result<> {
-    return i_binary_op([](uint32_t a, uint32_t b) {
-      return (a ^ b);
-    });
+    return i_binary_op(&Cell::bitwise_xor);
   }
 
   /**
@@ -2262,7 +2052,7 @@ class VM {
     // Get the value to NOT.
     const auto value = core.data.pop();
     // Perform the NOT operation.
-    const auto result = ~value;
+    const auto result = value.bitwise_not();
 
     // Push the result onto the stack.
     core.data.push(result);
@@ -2280,22 +2070,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_shift_left() noexcept -> result<> {
-    return i_binary_op([](uint32_t a, uint32_t b) {
-                         // Convert the value to a signed int.
-                         int32_t left;
-                         memcpy(&left, &a, sizeof(int32_t));
-                         // Convert the shift amount to a signed int.
-                         int32_t right;
-                         memcpy(&right, &b, sizeof(int32_t));
-                         int32_t result = left << right;
-                         // Convert the result to a uint32_t.
-                         uint32_t u_result;
-                         memcpy(&u_result, &result, sizeof(int32_t));
-                         return u_result;
-                       },
-                       [](uint32_t a, uint32_t b) {
-                         return (a << b);
-                       });
+    return i_binary_op(&Cell::bitwise_shift_left);
   }
 
   /**
@@ -2303,22 +2078,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_shift_right() noexcept -> result<> {
-    return i_binary_op([](uint32_t a, uint32_t b) {
-                         // Convert the value to a signed int.
-                         int32_t left;
-                         memcpy(&left, &a, sizeof(int32_t));
-                         // Convert the shift amount to a signed int.
-                         int32_t right;
-                         memcpy(&right, &b, sizeof(int32_t));
-                         int32_t result = left >> right;
-                         // Convert the result to a uint32_t.
-                         uint32_t u_result;
-                         memcpy(&u_result, &result, sizeof(int32_t));
-                         return u_result;
-                       },
-                       [](uint32_t a, uint32_t b) {
-                         return (a >> b);
-                       });
+    return i_binary_op(&Cell::bitwise_shift_right);
   }
 
   /**
@@ -2341,7 +2101,7 @@ class VM {
     const auto b = core.data.pop();
     const auto a = core.data.pop();
     // Pack the bytes.
-    const auto result = (d << 24) | (c << 16) | (b << 8) | a;
+    const auto result = Cell(d.to_byte(), c.to_byte(), b.to_byte(), a.to_byte());
     // Push the result.
     core.data.push(result);
 
@@ -2369,17 +2129,14 @@ class VM {
 
     // Get the value.
     const auto value = core.data.pop();
-    // Unpack the bytes.
-    const auto a = value & 0xFF;
-    const auto b = (value >> 8) & 0xFF;
-    const auto c = (value >> 16) & 0xFF;
-    const auto d = (value >> 24) & 0xFF;
 
-    // Push the bytes.
-    core.data.push(a);
-    core.data.push(b);
-    core.data.push(c);
-    core.data.push(d);
+    const auto bs = value.to_bytes();
+
+    // Push the bs.
+    core.data.push(Cell{bs[3]});
+    core.data.push(Cell{bs[2]});
+    core.data.push(Cell{bs[1]});
+    core.data.push(Cell{bs[0]});
 
     // Increment the ip.
     core.ip += 1;
@@ -2424,9 +2181,9 @@ class VM {
     }
 
     // Calculate the return addrs
-    const auto return_addr = core.ip + 4;
+    const uint32_t return_addr = core.ip + 4;
     // Push the return addrs onto the stack.
-    const auto &[push_err, _2] = core.addrs.push(return_addr);
+    const auto &[push_err, _2] = core.addrs.push(Cell{return_addr});
     if (push_err != Error::None) {
       return {push_err, Unit{}};
     }
@@ -2437,12 +2194,12 @@ class VM {
     uint32_t ip;
     switch (core.addr_mode) {
       case AddressMode::DIRECT: {
-        ip = call_addr;
+        ip = call_addr.to_uint32();
         break;
       }
 
       case AddressMode::RELATIVE: {
-        ip = call_addr + core.ip;
+        ip = call_addr.to_uint32() + core.ip;
         break;
       }
     }
@@ -2476,11 +2233,11 @@ class VM {
     // Get the condition.
     const auto cond = core.data.pop();
     // Call the subroutine if the condition is true.
-    if (cond) {
+    if (cond.to_bool()) {
       // Calculate the return addrs
-      const auto return_addr = core.ip + 4;
+      const uint32_t return_addr = core.ip + 4;
       // Push the return addrs onto the addrs stack.
-      const auto &[push_err, _2] = core.addrs.push(return_addr);
+      const auto &[push_err, _2] = core.addrs.push(Cell{return_addr});
       if (push_err != Error::None) {
         return {push_err, Unit{}};
       }
@@ -2489,12 +2246,12 @@ class VM {
       uint32_t ip;
       switch (core.addr_mode) {
         case AddressMode::DIRECT: {
-          ip = call_addr;
+          ip = call_addr.to_uint32();
           break;
         }
 
         case AddressMode::RELATIVE: {
-          ip = call_addr + core.ip;
+          ip = call_addr.to_uint32() + core.ip;
           break;
         }
       }
@@ -2530,12 +2287,12 @@ class VM {
     uint32_t ip;
     switch (core.addr_mode) {
       case AddressMode::DIRECT: {
-        ip = jump_addr;
+        ip = jump_addr.to_uint32();
         break;
       }
 
       case AddressMode::RELATIVE: {
-        ip = jump_addr + core.ip;
+        ip = jump_addr.to_uint32() + core.ip;
         break;
       }
     }
@@ -2568,17 +2325,17 @@ class VM {
     const auto jump_addr = core.data.pop();
     // Get the condition.
     const auto cond = core.data.pop();
-    if (cond) {
+    if (cond.to_bool()) {
       // Calculate the new IP.
       uint32_t ip;
       switch (core.addr_mode) {
         case AddressMode::DIRECT: {
-          ip = jump_addr;
+          ip = jump_addr.to_uint32();
           break;
         }
 
         case AddressMode::RELATIVE: {
-          ip = jump_addr + core.ip;
+          ip = jump_addr.to_uint32() + core.ip;
           break;
         }
       }
@@ -2611,7 +2368,7 @@ class VM {
       return {pop_err, Unit{}};
     }
     // Set the IP.
-    core.ip = ret_addr;
+    core.ip = ret_addr.to_uint32();
 
     // Set the addrs mode to `DIRECT`.
     core.addr_mode = AddressMode::DIRECT;
@@ -2639,14 +2396,14 @@ class VM {
     // Get the condition.
     const auto cond = core.data.pop();
     // If the condition is true, push the current IP onto the addrs stack.
-    if (cond) {
+    if (cond.to_bool()) {
       // Pop the return addrs.
       const auto &[pop_err, ret_addr] = core.addrs.pop();
       if (pop_err != Error::None) {
         return {pop_err, Unit{}};
       }
       // Set the IP.
-      core.ip = ret_addr;
+      core.ip = ret_addr.to_uint32();
     } else {
       // If the condition is false, increment the IP.
       core.ip += 4;
@@ -2679,7 +2436,7 @@ class VM {
     // Get interrupt addrs.
     auto int_addr = core.data.pop();
     // Set the interrupt handler.
-    const auto &[set_err, _2] = int_table.set(int_id, int_addr);
+    const auto &[set_err, _2] = int_table.set(int_id.to_uint32(), int_addr);
     if (set_err != Error::None) {
       return {set_err, Unit{}};
     }
@@ -2746,7 +2503,7 @@ class VM {
     auto int_id = core.data.pop();
     // Force interrupt if interrupts are enabled.
     if (int_enabled) {
-      interrupt(int_id);
+      interrupt(int_id.to_uint32());
     }
 
     // Increment the ip.
@@ -2824,9 +2581,9 @@ class VM {
     // Get the ip addrs.
     auto addr = core.data.pop();
     // Initialize the core.
-    auto &core_to_init = cores[core_id];
+    auto &core_to_init = cores[core_id.to_uint32()];
     core_to_init = Core<DS, AS, RS>{
-        .ip =  addr,
+        .ip =  addr.to_uint32(),
     };
 
     // Increment the ip.
@@ -2854,7 +2611,7 @@ class VM {
     // Get the core id.
     auto core_id = core.data.pop();
     // Get the core to activate.
-    auto &core_to_activate = cores[core_id];
+    auto &core_to_activate = cores[core_id.to_uint32()];
     // Activate the core.
     core_to_activate.active = true;
 
@@ -2883,7 +2640,7 @@ class VM {
     // Get the core id.
     auto core_id = core.data.pop();
     // Get the core to pause.
-    auto &core_to_pause = cores[core_id];
+    auto &core_to_pause = cores[core_id.to_uint32()];
     // Pause the core.
     core_to_pause.active = false;
 
@@ -2931,7 +2688,7 @@ class VM {
     // Get the register id.
     auto reg_id = core.data.pop();
     // Get the register.
-    const auto &[read_err, read] = core.regs.read(reg_id);
+    const auto &[read_err, read] = core.regs.read(reg_id.to_uint32());
     if (read_err != Error::None) {
       return {read_err, Unit{}};
     }
@@ -2966,7 +2723,7 @@ class VM {
     // Get the register value.
     auto reg_val = core.data.pop();
     // Write to the register.
-    const auto &[write_err, _2] = core.regs.write(reg_id, reg_val);
+    const auto &[write_err, _2] = core.regs.write(reg_id.to_uint32(), reg_val);
     if (write_err != Error::None) {
       return {write_err, Unit{}};
     }
@@ -3000,7 +2757,7 @@ class VM {
     // Get the origin addrs.
     auto orig = core.data.pop();
     // Copy the block.
-    const auto &[cpy_err, _2] = mem.copy_block(len, dst, orig);
+    const auto &[cpy_err, _2] = mem.copy_block(len.to_uint32(), dst.to_uint32(), orig.to_uint32());
     if (cpy_err != Error::None) {
       return {cpy_err, Unit{}};
     }
@@ -3034,7 +2791,7 @@ class VM {
     // Get the origin addrs.
     auto orig = core.data.pop();
     // Get the result.
-    const auto &[cmp_err, result] = mem.compare_block(len, dst, orig);
+    const auto &[cmp_err, result] = mem.compare_block(len.to_uint32(), dst.to_uint32(), orig.to_uint32());
     if (cmp_err != Error::None) {
       return {cmp_err, Unit{}};
     }
@@ -3641,11 +3398,6 @@ class VM {
     cores[0].active = true;
   }
 
-//  auto get_snapshot() noexcept -> VMSnapshot {
-//    return {mem, int_table, cores, cur_core_id, int_enabled};
-//  }
-
-
   auto load_program(std::array<uint8_t, MS> prg, size_t prg_size) noexcept -> void {
     mem.load_program(prg, prg_size);
   }
@@ -3662,7 +3414,7 @@ class VM {
     auto core_snapshots = std::array<CoreSnapshot<DS, AS, RS>, CS>{};
     for (int i = 0; i < CS; ++i) {
       auto const snapshot = cores[i].snapshot();
-      std::memcpy(&core_snapshots[i], &snapshot, sizeof(CoreSnapshot<DS, AS, RS>));
+      core_snapshots[i] = snapshot;
     }
     return VMSnapshot(mem.snapshot(), int_table.snapshot(), core_snapshots, cur_core_id, int_enabled);
   }

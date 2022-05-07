@@ -2,6 +2,7 @@
 #include "../src/zagros.hpp"
 
 using Zagros::Error;
+using Zagros::Cell;
 using Zagros::DataStack;
 using Zagros::AddressStack;
 using Zagros::RegisterBank;
@@ -13,10 +14,10 @@ using Zagros::VM;
 
 TEST(DataStack, PushPop) {
   auto stack = DataStack<32>{};
-  stack.push(1);
-  stack.push(0);
-  EXPECT_EQ(stack.pop(), 0);
-  EXPECT_EQ(stack.pop(), 1);
+  stack.push(Cell{1});
+  stack.push(Cell{0});
+  EXPECT_EQ(stack.pop(), Cell{0});
+  EXPECT_EQ(stack.pop(), Cell{1});
 }
 
 TEST(DataStack, PushPopEmptyUnderflows) {
@@ -28,11 +29,11 @@ TEST(DataStack, PushPopEmptyUnderflows) {
 TEST(DataStack, PushPopFull) {
   auto stack = DataStack<32>{};
   for (uint32_t i = 0; i < 32; ++i) {
-    stack.push(i);
+    stack.push(Cell{i});
   }
 
   for (uint32_t i = 0; i < 32; ++i) {
-    EXPECT_EQ(stack.pop(), 32 - i - 1);
+    EXPECT_EQ(stack.pop(), Cell{32 - i - 1});
   }
 }
 
@@ -40,7 +41,7 @@ TEST(DataStack, PushPopFullOverflows) {
   auto stack = DataStack<32>{};
 
   for (uint32_t i = 0; i < 32; ++i) {
-    stack.push(i);
+    stack.push(Cell{i});
   }
 
   auto const &[overflow, _] = stack.guard(0, 1);
@@ -50,11 +51,11 @@ TEST(DataStack, PushPopFullOverflows) {
 TEST(DataStack, PushPopFullUnderflows) {
   auto stack = DataStack<32>{};
   for (uint32_t i = 0; i < 32; ++i) {
-    stack.push(i);
+    stack.push(Cell{i});
   }
 
   for (uint32_t i = 0; i < 32; ++i) {
-    EXPECT_EQ(stack.pop(), 32 - i - 1);
+    EXPECT_EQ(stack.pop(), Cell{32 - i - 1});
   }
 
   auto const &[underflow, _] = stack.guard(1, 0);
@@ -64,7 +65,7 @@ TEST(DataStack, PushPopFullUnderflows) {
 TEST(DataStack, ClearWorks) {
   auto stack = DataStack<32>{};
   for (uint32_t i = 0; i < 32; ++i) {
-    stack.push(i);
+    stack.push(Cell{i});
   }
 
   stack.clear();
@@ -75,7 +76,7 @@ TEST(DataStack, ClearWorks) {
 TEST(DataStack, SnapshotWorks) {
   auto stack = DataStack<32>{};
   for (uint32_t i = 0; i < 32; ++i) {
-    stack.push(i);
+    stack.push(Cell{i});
   }
 
   auto const snapshot = stack.snapshot();
@@ -83,21 +84,21 @@ TEST(DataStack, SnapshotWorks) {
 
   auto const &snapshot_arr = snapshot.get_arr();
   for (uint32_t i = 0; i < 32; ++i) {
-    EXPECT_EQ(snapshot_arr[i], i);
+    EXPECT_EQ(snapshot_arr[i], Cell{i});
   }
 }
 
 TEST(AddressStack, PushPop) {
   auto stack = AddressStack<128>{};
-  stack.push(1);
-  stack.push(0);
+  stack.push(Cell{1});
+  stack.push(Cell{0});
   auto const &[none_1, zero] = stack.pop();
   auto const &[none_2, one] = stack.pop();
 
   ASSERT_EQ(none_1, Error::None);
-  ASSERT_EQ(zero, 0);
+  ASSERT_EQ(zero, Cell{0});
   ASSERT_EQ(none_2, Error::None);
-  ASSERT_EQ(one, 1);
+  ASSERT_EQ(one, Cell{1});
 }
 
 TEST(AddressStack, PushPopEmptyUnderflows) {
@@ -109,14 +110,14 @@ TEST(AddressStack, PushPopEmptyUnderflows) {
 TEST(AddressStack, PushPopFull) {
   auto stack = AddressStack<128>{};
   for (uint32_t i = 0; i < 128; ++i) {
-    auto const &[none, _] = stack.push(i);
+    auto const &[none, _] = stack.push(Cell{i});
     EXPECT_EQ(none, Error::None);
   }
 
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, popped] = stack.pop();
     EXPECT_EQ(none, Error::None);
-    EXPECT_EQ(popped, 128 - i - 1);
+    EXPECT_EQ(popped, Cell{128 - i - 1});
   }
 }
 
@@ -124,25 +125,25 @@ TEST(AddressStack, PushPopFullOverflows) {
   auto stack = AddressStack<128>{};
 
   for (uint32_t i = 0; i < 128; ++i) {
-    auto const &[none, _] = stack.push(i);
+    auto const &[none, _] = stack.push(Cell{i});
     EXPECT_EQ(none, Error::None);
   }
 
-  auto const &[overflow, _] = stack.push(128);
+  auto const &[overflow, _] = stack.push(Cell{128});
   ASSERT_EQ(overflow, Error::AddressStackOverflow);
 }
 
 TEST(AddressStack, PushPopFullUnderflows) {
   auto stack = AddressStack<128>{};
   for (uint32_t i = 0; i < 128; ++i) {
-    auto const &[none, _] = stack.push(i);
+    auto const &[none, _] = stack.push(Cell{i});
     EXPECT_EQ(none, Error::None);
   }
 
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, popped] = stack.pop();
     EXPECT_EQ(none, Error::None);
-    EXPECT_EQ(popped, 128 - i - 1);
+    EXPECT_EQ(popped, Cell{128 - i - 1});
   }
 
   auto const &[underflow, _] = stack.pop();
@@ -152,7 +153,7 @@ TEST(AddressStack, PushPopFullUnderflows) {
 TEST(AddressStack, ClearWorks) {
   auto stack = AddressStack<128>{};
   for (uint32_t i = 0; i < 128; ++i) {
-    auto const &[none, _] = stack.push(i);
+    auto const &[none, _] = stack.push(Cell{i});
     EXPECT_EQ(none, Error::None);
   }
 
@@ -164,7 +165,7 @@ TEST(AddressStack, ClearWorks) {
 TEST(AddressStack, SnapshotWorks) {
   auto stack = AddressStack<128>{};
   for (uint32_t i = 0; i < 128; ++i) {
-    stack.push(i);
+    stack.push(Cell{i});
   }
 
   auto const snapshot = stack.snapshot();
@@ -172,21 +173,21 @@ TEST(AddressStack, SnapshotWorks) {
 
   auto const &snapshot_arr = snapshot.get_arr();
   for (uint32_t i = 0; i < 128; ++i) {
-    EXPECT_EQ(snapshot_arr[i], i);
+    EXPECT_EQ(snapshot_arr[i], Cell{i});
   }
 }
 
 TEST(RegisterBank, ReadWriteWorks) {
   auto bank = RegisterBank<24>{};
   for (uint32_t i = 0; i < 24; ++i) {
-    auto const &[none, _] = bank.write(i, i);
+    auto const &[none, _] = bank.write(i, Cell{i});
     ASSERT_EQ(none, Error::None);
   }
 
   for (uint32_t i = 0; i < 24; ++i) {
     auto const &[none, read] = bank.read(i);
     ASSERT_EQ(none, Error::None);
-    ASSERT_EQ(read, i);
+    ASSERT_EQ(read, Cell{i});
   }
 }
 
@@ -194,72 +195,72 @@ TEST(RegisterBank, ReturnsErrorOnIllegalRegisterId) {
   auto bank = RegisterBank<24>{};
   auto const &[read_err, _1] = bank.read(24);
   ASSERT_EQ(read_err, Error::IllegalRegisterId);
-  auto const &[write_err, _2] = bank.write(24, 0);
+  auto const &[write_err, _2] = bank.write(24, Cell{0});
   ASSERT_EQ(write_err, Error::IllegalRegisterId);
 }
 
 TEST(RegisterBank, ClearWorks) {
   auto bank = RegisterBank<24>{};
   for (uint32_t i = 0; i < 24; ++i) {
-    auto const &[none, _] = bank.write(i, i);
+    auto const &[none, _] = bank.write(i, Cell{i});
     EXPECT_EQ(none, Error::None);
   }
   bank.clear();
   for (uint32_t i = 0; i < 24; ++i) {
     auto const &[none, read] = bank.read(i);
     EXPECT_EQ(none, Error::None);
-    ASSERT_EQ(read, 0);
+    ASSERT_EQ(read, Cell{0});
   }
 }
 
 TEST(RegisterBank, SnapshotWorks) {
   auto bank = RegisterBank<24>{};
   for (uint32_t i = 0; i < 24; ++i) {
-    auto const &[none, _] = bank.write(i, i);
+    auto const &[none, _] = bank.write(i, Cell{i});
     EXPECT_EQ(none, Error::None);
   }
 
   auto const snapshot = bank.snapshot();
   auto const &snapshot_arr = snapshot.get_arr();
   for (uint32_t i = 0; i < 24; ++i) {
-    EXPECT_EQ(snapshot_arr[i], i);
+    EXPECT_EQ(snapshot_arr[i], Cell{i});
   }
 }
 
 TEST(Memory, ReadWriteWorks) {
   auto memory = Memory<65535>{};
   for (uint32_t i = 0; i < 65535; ++i) {
-    uint8_t value = i % 256;
-    auto const &[none, _] = memory.write_bytes(i, value);
+    Cell value = Cell{i % 256};
+    auto const &[none, _] = memory.write_bytes<1>(i, value);
     EXPECT_EQ(none, Error::None);
   }
 
   for (uint32_t i = 0; i < 65535; ++i) {
-    uint8_t value = i % 256;
-    auto const &[none, read] = memory.read_bytes<uint8_t>(i);
+    uint32_t value = i % 256;
+    auto const &[none, read] = memory.read_bytes<1>(i);
     EXPECT_EQ(none, Error::None);
-    EXPECT_EQ(read, value);
+    EXPECT_EQ(read, Cell{value});
   }
 }
 
 TEST(Memory, CompareBlockWorks) {
   auto memory = Memory<65535>{};
   for (uint32_t i = 0; i < 65535; ++i) {
-    uint8_t value = i % 256;
-    auto const &[none, _] = memory.write_bytes(i, value);
+    Cell value = Cell{i % 256};
+    auto const &[none, _] = memory.write_bytes<1>(i, value);
     EXPECT_EQ(none, Error::None);
   }
 
   auto const &[none, res] = memory.compare_block(0, 0, 65535);
   EXPECT_EQ(none, Error::None);
-  EXPECT_EQ(res, true);
+  EXPECT_EQ(res, Cell{true});
 }
 
 TEST(Memory, CopyBlockWorks) {
   auto memory = Memory<65535>{};
   for (uint32_t i = 0; i < 32767; ++i) {
-    uint8_t value = i % 256;
-    auto const &[none, _] = memory.write_bytes(i, value);
+    Cell value = Cell{i % 256};
+    auto const &[none, _] = memory.write_bytes<1>(i, value);
     EXPECT_EQ(none, Error::None);
   }
 
@@ -269,32 +270,34 @@ TEST(Memory, CopyBlockWorks) {
   }
 
   for (uint32_t i = 32767; i < 65534; ++i) {
-    uint8_t value = (i-32767) % 256;
-    auto const &[none, read] = memory.read_bytes<uint8_t>(i);
+    Cell value = Cell{(i - 32767) % 256};
+    auto const &[none, read] = memory.read_bytes<1>(i);
     EXPECT_EQ(none, Error::None);
     EXPECT_EQ(read, value);
   }
   {
-    auto const &[none, read] = memory.read_bytes<uint8_t>(65534);
+    auto const &[none, read] = memory.read_bytes<1>(65534);
     EXPECT_EQ(none, Error::None);
-    EXPECT_EQ(read, 0);
+    EXPECT_EQ(read, Cell{0});
   }
 }
 
 TEST(Memory, LoadProgramWorks) {
-  std::array<uint8_t, 65535UL> prg {};
+  std::array<uint8_t, 65535UL> prg{};
   for (uint32_t i = 0; i < 65535; ++i) {
     prg[i] = i % 256;
   }
 
   auto memory = Memory<65535>{};
 
-  auto const &[none, _] = memory.load_program(prg, prg.size());
-  EXPECT_EQ(none, Error::None);
+  {
+    auto const &[none, _] = memory.load_program(prg, prg.size());
+    EXPECT_EQ(none, Error::None);
+  }
 
   for (uint32_t i = 0; i < 65535; ++i) {
-    uint8_t value = i % 256;
-    auto const &[none, read] = memory.read_bytes<uint8_t>(i);
+    Cell value = Cell{i % 256};
+    auto const &[none, read] = memory.read_bytes<1>(i);
     EXPECT_EQ(none, Error::None);
     EXPECT_EQ(read, value);
   }
@@ -303,23 +306,23 @@ TEST(Memory, LoadProgramWorks) {
 TEST(Memory, ClearWorks) {
   auto memory = Memory<65535>{};
   for (uint32_t i = 0; i < 65535; ++i) {
-    uint8_t value = i % 256;
-    auto const &[none, _] = memory.write_bytes(i, value);
+    Cell value = Cell{i % 256};
+    auto const &[none, _] = memory.write_bytes<1>(i, value);
     EXPECT_EQ(none, Error::None);
   }
   memory.clear();
   for (uint32_t i = 0; i < 65535; ++i) {
-    auto const &[none, read] = memory.read_bytes<uint8_t>(i);
+    auto const &[none, read] = memory.read_bytes<1>(i);
     EXPECT_EQ(none, Error::None);
-    EXPECT_EQ(read, 0);
+    EXPECT_EQ(read, Cell{0});
   }
 }
 
 TEST(Memory, SnapshotWorks) {
   auto memory = Memory<65535>{};
   for (uint32_t i = 0; i < 65535; ++i) {
-    uint8_t value = i % 256;
-    auto const &[none, _] = memory.write_bytes(i, value);
+    Cell value = Cell{i % 256};
+    auto const &[none, _] = memory.write_bytes<1>(i, value);
     EXPECT_EQ(none, Error::None);
   }
 
@@ -334,12 +337,12 @@ TEST(InterruptTable, ReadWriteWorks) {
   auto interrupt_table = InterruptTable<128>{};
   for (uint32_t i = 0; i < 128; ++i) {
     uint8_t value = i % 256;
-    auto const &[none, _] = interrupt_table.set(i, value);
+    auto const &[none, _] = interrupt_table.set(i, Cell{value});
     EXPECT_EQ(none, Error::None);
   }
 
   for (uint32_t i = 0; i < 128; ++i) {
-    uint8_t value = i % 256;
+    auto value = Cell{i % 256};
     auto const &[none, read] = interrupt_table.get(i);
     EXPECT_EQ(none, Error::None);
     EXPECT_EQ(read, value);
@@ -349,7 +352,7 @@ TEST(InterruptTable, ReadWriteWorks) {
 TEST(InterruptTable, ClearWorks) {
   auto interrupt_table = InterruptTable<128>{};
   for (uint32_t i = 0; i < 128; ++i) {
-    uint8_t value = i % 256;
+    Cell value = Cell{i % 256};
     auto const &[none, _] = interrupt_table.set(i, value);
     EXPECT_EQ(none, Error::None);
   }
@@ -357,14 +360,14 @@ TEST(InterruptTable, ClearWorks) {
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, read] = interrupt_table.get(i);
     EXPECT_EQ(none, Error::None);
-    EXPECT_EQ(read, 0);
+    EXPECT_EQ(read, Cell{0});
   }
 }
 
 TEST(InterruptTable, SnapshotWorks) {
   auto interrupt_table = InterruptTable<128>{};
   for (uint32_t i = 0; i < 128; ++i) {
-    uint8_t value = i % 256;
+    Cell value = Cell{i % 256};
     auto const &[none, _] = interrupt_table.set(i, value);
     EXPECT_EQ(none, Error::None);
   }
@@ -372,7 +375,7 @@ TEST(InterruptTable, SnapshotWorks) {
   auto const snapshot = interrupt_table.snapshot();
   auto const &snapshot_arr = snapshot.get_arr();
   for (uint32_t i = 0; i < 128; ++i) {
-    EXPECT_EQ(snapshot_arr[i], i % 256);
+    EXPECT_EQ(snapshot_arr[i], Cell{i % 256});
   }
 }
 
@@ -535,7 +538,7 @@ TEST(VM, InstructionNopWorks) {
 }
 
 template<size_t S>
-auto stack_pop(Zagros::StackSnapshot<S> const &ss, size_t i) -> uint32_t {
+auto stack_pop(Zagros::StackSnapshot<S> const &ss, size_t i) -> Cell {
   return ss.get_arr()[ss.get_top() - 1 - i];
 }
 
@@ -552,7 +555,7 @@ TEST(VM, InstructionLoadWordWorks) {
   auto const &ss = vm.snapshot();
   auto &core = ss.get_cores()[0];
   auto pop = stack_pop(core.get_data(), 0);
-  ASSERT_EQ(pop, 1337);
+  ASSERT_EQ(pop, Cell{1337});
   ASSERT_EQ(core.get_ip(), 8);
   ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
 }
@@ -567,7 +570,7 @@ TEST(VM, InstructionLoadHalfWorks) {
   auto const &ss = vm.snapshot();
   auto &core = ss.get_cores()[0];
   auto pop = stack_pop(core.get_data(), 0);
-  ASSERT_EQ(pop, 1337);
+  ASSERT_EQ(pop, Cell{1337});
   ASSERT_EQ(core.get_ip(), 3);
   ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
 }
@@ -582,7 +585,7 @@ TEST(VM, InstructionLoadByteWorks) {
   auto const &ss = vm.snapshot();
   auto &core = ss.get_cores()[0];
   auto pop = stack_pop(core.get_data(), 0);
-  ASSERT_EQ(pop, 137);
+  ASSERT_EQ(pop, Cell{137});
   ASSERT_EQ(core.get_ip(), 2);
   ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
 }
@@ -621,7 +624,7 @@ TEST(VM, InstructionFetchWordWorks) {
   auto const &ss = vm.snapshot();
   auto &core = ss.get_cores()[0];
   auto pop = stack_pop(core.get_data(), 0);
-  ASSERT_EQ(pop, 1337);
+  ASSERT_EQ(pop, Cell{1337});
   ASSERT_EQ(core.get_ip(), 10);
   ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
 }
@@ -641,7 +644,7 @@ TEST(VM, InstructionFetchHalfWorks) {
   auto const &ss = vm.snapshot();
   auto &core = ss.get_cores()[0];
   auto pop = stack_pop(core.get_data(), 0);
-  ASSERT_EQ(pop, 1337);
+  ASSERT_EQ(pop, Cell{1337});
   ASSERT_EQ(core.get_ip(), 8);
   ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
 }
@@ -661,7 +664,7 @@ TEST(VM, InstructionFetchByteWorks) {
   auto const &ss = vm.snapshot();
   auto &core = ss.get_cores()[0];
   auto pop = stack_pop(core.get_data(), 0);
-  ASSERT_EQ(pop, 137);
+  ASSERT_EQ(pop, Cell{137});
   ASSERT_EQ(core.get_ip(), 7);
   ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
 }
@@ -750,8 +753,8 @@ TEST(VM, InstructDupeWorks) {
   auto core = ss.get_cores()[0];
   auto pop0 = stack_pop(core.get_data(), 0);
   auto pop1 = stack_pop(core.get_data(), 1);
-  ASSERT_EQ(pop0, 137);
-  ASSERT_EQ(pop1, 137);
+  ASSERT_EQ(pop0, Cell{137});
+  ASSERT_EQ(pop1, Cell{137});
   ASSERT_EQ(core.get_ip(), 3);
   ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
 }
@@ -786,8 +789,8 @@ TEST(VM, InstructionSwapWorks) {
   auto core = ss.get_cores()[0];
   auto pop0 = stack_pop(core.get_data(), 0);
   auto pop1 = stack_pop(core.get_data(), 1);
-  ASSERT_EQ(pop0, 255);
-  ASSERT_EQ(pop1, 0);
+  ASSERT_EQ(pop0, Cell{255});
+  ASSERT_EQ(pop1, Cell{0});
   ASSERT_EQ(core.get_ip(), 5);
   ASSERT_EQ(core.get_op_mode(), Zagros::OpMode::SIGNED);
 }
