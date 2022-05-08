@@ -910,8 +910,7 @@ class Memory {
   /**
    * Constructs a new memory bank. All memory is initialized to 0.
    */
-  constexpr Memory() noexcept {
-    std::fill(arr.begin(), arr.end(), 0);
+  constexpr Memory() noexcept : arr{}{
   }
 
   /**
@@ -1004,7 +1003,7 @@ class Memory {
     if (dst + len > S || orig + len > S) {
       return fail(Error::IllegalMemoryAddress);
     }
-    std::copy_n(arr.begin(), len, arr.begin() + dst);
+    std::copy_n(arr.begin() + orig, len, arr.begin() + dst);
     return success();
   }
 
@@ -1311,7 +1310,19 @@ class Core {
   /// The register bank.
   RegisterBank<RS> regs;
 
- public:
+  /**
+   * Set the core's state as just initialized with current ip.
+   * @param init_ip The instruction pointer.
+   */
+  auto init(uint32_t init_ip) noexcept -> void {
+    ip = init_ip;
+    active = false;
+    op_mode = OpMode::SIGNED;
+    addr_mode = AddressMode::DIRECT;
+    data.clear();
+    addrs.clear();
+    regs.clear();
+  }
 
   /**
    * Gets a snapshot of the core.
@@ -2550,14 +2561,6 @@ class VM {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
-    // Set the all core`s IP to a maximum value.
-//    for (auto &c : cores) {
-//      c.ip = UINT32_MAX;
-//    }
-
-    // Set op mode to `SIGNED`.
-    core.op_mode = OpMode::SIGNED;
-
     // Return the error.
     return fail(Error::SystemHalt);
   }
@@ -2582,10 +2585,7 @@ class VM {
     // Get the ip addrs.
     auto addr = core.data.pop();
     // Initialize the core.
-    auto &core_to_init = cores[core_id.to_uint32()];
-    core_to_init = Core<DS, AS, RS>{
-        .ip =  addr.to_uint32(),
-    };
+    cores[core_id.to_uint32()].init(addr.to_uint32());
 
     // Increment the ip.
     core.ip += 1;
