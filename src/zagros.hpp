@@ -475,8 +475,12 @@ class Cell {
    * @return The result of the operation.
    */
   [[nodiscard]] Cell bitwise_or(const Cell rhs) const noexcept {
-    return Cell(this->to_uint32() | rhs.to_uint32());
-
+    uint32_t left;
+    std::memcpy(&left, this->bs.data(), sizeof(int32_t));
+    uint32_t right;
+    std::memcpy(&right, rhs.bs.data(), sizeof(int32_t));
+    int32_t result = left | right;
+    return Cell(result);
   }
 
   /**
