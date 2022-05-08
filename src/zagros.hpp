@@ -1785,7 +1785,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_binary_op(
-      std::function<Cell(const Cell &, const Cell)> op
+        Cell (*op)(const Cell &, const Cell)
   ) noexcept -> result<> {
     // Get the current core
     auto &core = cores[cur_core_id];
@@ -1819,7 +1819,7 @@ class VM {
  * @return Unit if the operation was successful. Error otherwise.
  */
   auto i_binary_op(
-      std::function<Cell(const Cell &, const Cell, const OpMode)> op
+        Cell (*op)(const Cell &, const Cell, const OpMode)
   ) noexcept -> result<> {
     // Get the current core
     auto &core = cores[cur_core_id];
@@ -1854,7 +1854,7 @@ class VM {
  * @return Unit if the operation was successful. Error otherwise.
  */
   auto i_binary_op(
-      std::function<result<Cell>(const Cell &, const Cell, const OpMode)> op
+        result<Cell> (*op)(const Cell &, const Cell, const OpMode)
   ) noexcept -> result<> {
     // Get the current core
     auto &core = cores[cur_core_id];
@@ -1889,7 +1889,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_equal() noexcept -> result<> {
-    return i_binary_op(&Cell::equal);
+    return i_binary_op([](const Cell &left, const Cell right) {
+      return left.equal(right);
+    });
   }
 
   /**
@@ -1897,7 +1899,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_not_equal() noexcept -> result<> {
-    return i_binary_op(&Cell::not_equal);
+    return i_binary_op([](const Cell &left, const Cell right) {
+      return left.not_equal(right);
+    });
   }
 
   /**
@@ -1905,8 +1909,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_less_than() noexcept -> result<> {
-    // Cell (Cell*)(Cell, OpMode)
-    return i_binary_op(&Cell::less_than);
+    return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
+      return left.less_than(right, op_mode);
+    });
   }
 
   /**
@@ -1914,7 +1919,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_greater_than() noexcept -> result<> {
-    return i_binary_op(&Cell::greater_than);
+    return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
+      return left.greater_than(right, op_mode);
+    });
   }
 
   /**
@@ -1922,7 +1929,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_add() noexcept -> result<> {
-    return i_binary_op(&Cell::add);
+    return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
+      return left.add(right, op_mode);
+    });
   }
 
   /**
@@ -1930,7 +1939,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_subtract() noexcept -> result<> {
-    return i_binary_op(&Cell::subtract);
+    return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
+      return left.subtract(right, op_mode);
+    });
   }
 
   /**
@@ -1938,7 +1949,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_multiply() noexcept -> result<> {
-    return i_binary_op(&Cell::multiply);
+    return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
+      return left.multiply(right, op_mode);
+    });
   }
 
   /**
@@ -2020,7 +2033,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_and() noexcept -> result<> {
-    return i_binary_op(&Cell::bitwise_and);
+    return i_binary_op([](const Cell &left, const Cell right) {
+      return left.bitwise_and(right);
+    });
   }
 
   /**
@@ -2028,7 +2043,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_or() noexcept -> result<> {
-    return i_binary_op(&Cell::bitwise_or);
+    return i_binary_op([](const Cell &left, const Cell right) {
+      return left.bitwise_or(right);
+    });
   }
 
   /**
@@ -2036,7 +2053,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_xor() noexcept -> result<> {
-    return i_binary_op(&Cell::bitwise_xor);
+    return i_binary_op([](const Cell &left, const Cell right) {
+      return left.bitwise_xor(right);
+    });
   }
 
   /**
@@ -2074,7 +2093,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_shift_left() noexcept -> result<> {
-    return i_binary_op(&Cell::bitwise_shift_left);
+    return i_binary_op([](const Cell &left, const Cell right, OpMode op_mode) {
+      return left.bitwise_shift_left(right, op_mode);
+    });
   }
 
   /**
@@ -2082,7 +2103,9 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_shift_right() noexcept -> result<> {
-    return i_binary_op(&Cell::bitwise_shift_right);
+    return i_binary_op([](const Cell &left, const Cell right, OpMode op_mode) {
+      return left.bitwise_shift_right(right, op_mode);
+    });
   }
 
   /**
