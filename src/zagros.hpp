@@ -1,5 +1,5 @@
+#include <algorithm>
 #include <array>
-#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -466,12 +466,7 @@ class Cell {
    * @return The result of the operation.
    */
   [[nodiscard]] Cell bitwise_and(const Cell rhs) const noexcept {
-    // Array will have all bytes written to, therefore it doesn't need initialization
-    std::array<uint8_t, 4> result; // NOLINT(cppcoreguidelines-pro-type-member-init)
-    for (size_t i = 0; i < 4; i++) {
-      result[i] = this->bs[i] & rhs.bs[i];
-    }
-    return Cell(result);
+    return Cell(this->to_uint32() & rhs.to_uint32());
   }
 
   /**
@@ -480,12 +475,8 @@ class Cell {
    * @return The result of the operation.
    */
   [[nodiscard]] Cell bitwise_or(const Cell rhs) const noexcept {
-    // Array will have all bytes written to, therefore it doesn't need initialization
-    std::array<uint8_t, 4> result; // NOLINT(cppcoreguidelines-pro-type-member-init)
-    for (size_t i = 0; i < 4; i++) {
-      result[i] = this->bs[i] | rhs.bs[i];
-    }
-    return Cell(result);
+    return Cell(this->to_uint32() | rhs.to_uint32());
+
   }
 
   /**
@@ -494,12 +485,7 @@ class Cell {
    * @return The result of the operation.
    */
   [[nodiscard]] Cell bitwise_xor(const Cell rhs) const noexcept {
-    // Array will have all bytes written to, therefore it doesn't need initialization
-    std::array<uint8_t, 4> result; // NOLINT(cppcoreguidelines-pro-type-member-init)
-    for (size_t i = 0; i < 4; i++) {
-      result[i] = this->bs[i] ^ rhs.bs[i];
-    }
-    return Cell(result);
+    return Cell(this->to_uint32() ^ rhs.to_uint32());
   }
 
   /**
@@ -507,12 +493,7 @@ class Cell {
    * @return The result of the operation.
    */
   [[nodiscard]] Cell bitwise_not() const noexcept {
-    // Array will have all bytes written to, therefore it doesn't need initialization
-    std::array<uint8_t, 4> result; // NOLINT(cppcoreguidelines-pro-type-member-init)
-    for (size_t i = 0; i < 4; i++) {
-      result[i] = ~this->bs[i];
-    }
-    return Cell(result);
+    return Cell(~this->to_uint32());
   }
 
   /**
