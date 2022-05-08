@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -151,22 +152,30 @@ class Cell {
   * A constructor to initialize the register with an int32_t.
    * @param value The value to initialize the register with.
   */
-  constexpr explicit Cell(const int32_t value) noexcept {
-    bs[0] = value;
-    bs[1] = value >> 8;
-    bs[2] = value >> 16;
-    bs[3] = value >> 24;
+  explicit Cell(const int32_t value) noexcept {
+    if constexpr(std::endian::native == std::endian::little){
+      std::memcpy(bs.data(), &value, 4);
+    } else {
+      bs[0] = value;
+      bs[1] = value >> 8;
+      bs[2] = value >> 16;
+      bs[3] = value >> 24;
+    }
   }
 
   /**
   * A constructor to initialize the register with an uint32_t.
    * @param value The value to initialize the register with.
   */
-  constexpr explicit Cell(const uint32_t value) noexcept {
-    bs[0] = value;
-    bs[1] = value >> 8;
-    bs[2] = value >> 16;
-    bs[3] = value >> 24;
+  explicit Cell(const uint32_t value) noexcept {
+    if constexpr(std::endian::native == std::endian::little){
+      std::memcpy(bs.data(), &value, 4);
+    } else {
+      bs[0] = value;
+      bs[1] = value >> 8;
+      bs[2] = value >> 16;
+      bs[3] = value >> 24;
+    }
   }
 
   /**
@@ -183,9 +192,7 @@ class Cell {
    * @param value The value to initialize the register with.
   */
   constexpr explicit Cell(const bool value) noexcept {
-    for (auto &b : bs) {
-      b = value ? 0xFF : 0x00;
-    }
+    std::fill_n(bs.begin(), 4, value ? 0xFF : 0x00);
   }
 
   /**
