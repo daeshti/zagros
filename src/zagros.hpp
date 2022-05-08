@@ -269,7 +269,7 @@ class Cell {
    * @return True if the register is equal the other register in provided operation mode.
    */
   [[nodiscard]] constexpr Cell equal(const Cell rhs) const noexcept {
-    return Cell(bs == rhs.bs);
+    return Cell(this->to_uint32() == rhs.to_uint32());
   }
 
   /**
@@ -279,7 +279,7 @@ class Cell {
    * @return True if the register is not equal the rhs register in provided operation mode.
    */
   [[nodiscard]] constexpr Cell not_equal(const Cell rhs) const noexcept {
-    return Cell(bs != rhs.bs);
+    return Cell(this->to_uint32() != rhs.to_uint32());
   }
 
   /**
@@ -555,7 +555,7 @@ class Cell {
    * @param rhs The other cell to compare with.
    */
   constexpr bool operator==(const Cell &rhs) const noexcept {
-    return bs == rhs.bs;
+    return this->to_uint32() == rhs.to_uint32();
   }
   // endregion
 };
