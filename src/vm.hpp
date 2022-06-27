@@ -1254,28 +1254,20 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   auto i_invoke_io() noexcept -> result<> {
-    // TODO: Implement
-//        auto &core = cores[cur_core_id];
-//
-//        const auto guard_result = core.data.guard(1, 0);
-//const auto guard_err = std::get<0>(guard_result);
-//
-//        if (guard_err != Error::None) {
-//            return {guard_err, Unit{}};
-//        }
-//
-//        auto io_id = core.data.pop();
-//        auto &io = io_table.get(io_id);
-//        if (io.read) {
-//            const auto read_result = io.read();
-//const auto read_err = std::get<0>(read_result);
-//
-//            if (read_err != Error::None) {
-//                return {read_err, Unit{}};
-//            }
-//        }
-//
-//        core.op_mode = OpMode::SIGNED;
+
+    auto &core = cores[cur_core_id];
+
+    const auto guard_result = core.data.guard(1, 0);
+    const auto guard_err = std::get<0>(guard_result);
+
+    if (guard_err != Error::None) {
+      return {guard_err, Unit{}};
+    }
+
+    auto io_id = core.data.pop().to_size();
+    io_table.call(io_id);
+
+    core.op_mode = OpMode::SIGNED;
 
     return {Error::None, Unit{}};
   }
