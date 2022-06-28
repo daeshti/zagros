@@ -15,7 +15,6 @@
 #include "result.hpp"
 #include "instruction_mode.hpp"
 
-namespace zagros {
 /**
  * A representation of a register's value.
  */
@@ -450,6 +449,5 @@ class Cell {
   }
   // endregion
 };
-}
 
 #endif //ZAGROS_CELL

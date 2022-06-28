@@ -18,7 +18,6 @@
 #include "zagros_configuration.h"
 #include "instruction_mode.hpp"
 
-namespace zagros {
 
 /**
  * A snapshot of a data stack.
@@ -429,5 +428,5 @@ class VMSnapshot {
   }
 
 };
-}
+
 #endif //ZAGROS_SNAPSHOT

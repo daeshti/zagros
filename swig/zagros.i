@@ -2,12 +2,6 @@
 
 %{
  /* Includes the header in the wrapper code */
-#include "../src/callback.hpp"
-#include "../src/result.hpp"
-#include "../src/instruction_mode.hpp"
-#include "../src/cell.hpp"
-#include "../src/io.h"
-#include "../srs/snapshot.hpp"
 #include "../src/vm.hpp"
 %}
 
@@ -35,15 +29,15 @@ typedef unsigned char uint8_t;
 %include <std_pair.i>
 %include <std_vector.i>
 %include "std_tuple.i"
-%template(Triple) std::tuple<zagros::Error, zagros::Cell, zagros::Cell>;
+%template(Triple) std::tuple<Error, Cell, Cell>;
 
 %include "../src/result.hpp"
-%template() zagros::result<zagros::Cell>;
-%template() zagros::result<zagros::Unit>;
-%template() zagros::result<uint8_t>;
-%template(CellResult) std::pair<zagros::Error, zagros::Cell>;
-%template(UnitResult) std::pair<zagros::Error, zagros::Unit>;
-%template(ByteResult) std::pair<zagros::Error, uint8_t>;
+%template() result<Cell>;
+%template() result<Unit>;
+%template() result<uint8_t>;
+%template(CellResult) std::pair<Error, Cell>;
+%template(UnitResult) std::pair<Error, Unit>;
+%template(ByteResult) std::pair<Error, uint8_t>;
 
 
 %include "../src/instruction_mode.hpp"
@@ -54,15 +48,15 @@ typedef unsigned char uint8_t;
 
 %template(StringVector) std::vector<std::string>;
 %template(MemoryArray) std::array<uint8_t, MEMORY_SIZE >;
-%template(AddressArray) std::array<zagros::Cell,ADDRESS_STACK_SIZE >;
-%template(DataArray) std::array<zagros::Cell,DATA_STACK_SIZE >;
-%template(InterruptArray) std::array<zagros::Cell,INTERRUPT_TABLE_SIZE >;
-%template(RegisterArray) std::array<zagros::Cell,REGISTER_BANK_SIZE >;
+%template(AddressArray) std::array<Cell,ADDRESS_STACK_SIZE >;
+%template(DataArray) std::array<Cell,DATA_STACK_SIZE >;
+%template(InterruptArray) std::array<Cell,INTERRUPT_TABLE_SIZE >;
+%template(RegisterArray) std::array<Cell,REGISTER_BANK_SIZE >;
 
 %include "../src/snapshot.hpp"
-%template(CoreSnapshotArray) std::array<zagros::CoreSnapshot,CORE_COUNT >;
+%template(CoreSnapshotArray) std::array<CoreSnapshot,CORE_COUNT >;
 
-%template(CallbackArray) std::array<zagros::Callback*, zagros::IO_TABLE_SIZE>;
+%template(CallbackArray) std::array<Callback*, IO_TABLE_SIZE>;
 %include "../src/io.h"
 
 /* Parse the header file to generate wrappers */

@@ -21,7 +21,6 @@
 #include "register.hpp"
 #include "memory.hpp"
 
-namespace zagros {
 /**
  * A table of interrupt ids to interrupt handler addresses.
  * @tparam S The size of the memory.
@@ -29,7 +28,7 @@ namespace zagros {
 class InterruptTable {
  private:
   /// The table`s arr
-  std::array<zagros::Cell, zagros::INTERRUPT_TABLE_SIZE> data{};
+  std::array<Cell, INTERRUPT_TABLE_SIZE> data{};
 
  public:
   /**
@@ -39,7 +38,7 @@ class InterruptTable {
    * so the system will halt if an unset interrupt is triggered.
    */
   InterruptTable() noexcept {
-    std::fill(data.begin(), data.begin() + zagros::INTERRUPT_TABLE_SIZE, zagros::Cell{});
+    std::fill(data.begin(), data.begin() + INTERRUPT_TABLE_SIZE, Cell{});
   }
 
   /**
@@ -47,12 +46,12 @@ class InterruptTable {
    * @param id The interrupt id.
    * @return The interrupt handler addrs if the id is valid, Error otherwise.
    */
-  auto get(size_t id) const noexcept -> zagros::result<zagros::Cell> {
-    if (id >= zagros::INTERRUPT_TABLE_SIZE) {
-      return {zagros::Error::IllegalInterruptId, zagros::Cell{}};
+  auto get(size_t id) const noexcept -> result<Cell> {
+    if (id >= INTERRUPT_TABLE_SIZE) {
+      return {Error::IllegalInterruptId, Cell{}};
     }
     const auto addr = data[id];
-    return {zagros::Error::None, addr};
+    return {Error::None, addr};
   }
 
   /**
@@ -61,28 +60,28 @@ class InterruptTable {
    * @param addr The interrupt handler addrs.
    * @return Unit if the id is valid, Error otherwise.
    */
-  auto set(size_t id, zagros::Cell addr) noexcept -> zagros::result<zagros::Cell> {
-    if (id >= zagros::INTERRUPT_TABLE_SIZE) {
-      return {zagros::Error::IllegalInterruptId, zagros::Cell{}};
+  auto set(size_t id, Cell addr) noexcept -> result<Cell> {
+    if (id >= INTERRUPT_TABLE_SIZE) {
+      return {Error::IllegalInterruptId, Cell{}};
     }
     data[id] = addr;
-    return {zagros::Error::None, addr};
+    return {Error::None, addr};
   }
 
   /**
    * Clears the table.
    */
   auto clear() noexcept -> void {
-    std::fill(data.begin(), data.end(), zagros::Cell{});
+    std::fill(data.begin(), data.end(), Cell{});
   }
 
   /**
    * Gets a snapshot of the table.
    */
-  auto snapshot() const noexcept -> zagros::InterruptTableSnapshot {
-    return zagros::InterruptTableSnapshot(data);
+  auto snapshot() const noexcept -> InterruptTableSnapshot {
+    return InterruptTableSnapshot(data);
   }
 };
-}
+
 
 #endif //ZAGROS_INTERRUPT

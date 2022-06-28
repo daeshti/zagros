@@ -23,7 +23,6 @@
 #include "register.hpp"
 #include "memory.hpp"
 
-namespace zagros {
 /**
  * A table of io ids to callbacks.
  * @tparam S The size of the memory.
@@ -31,7 +30,7 @@ namespace zagros {
 class IoTable {
  private:
   /// The table`s arr
-  std::array<zagros::Callback*, zagros::IO_TABLE_SIZE> callbacks{};
+  std::array<Callback*, IO_TABLE_SIZE> callbacks{};
 
  public:
   /**
@@ -41,7 +40,7 @@ class IoTable {
    * so the system will halt if an unset interrupt is triggered.
    */
   IoTable() noexcept {
-    std::fill(callbacks.begin(), callbacks.begin() + zagros::IO_TABLE_SIZE, new zagros::Callback{});
+    std::fill(callbacks.begin(), callbacks.begin() + IO_TABLE_SIZE, new Callback{});
   }
 
   /**
@@ -50,7 +49,7 @@ class IoTable {
    * Memory will return a `SystemHalt` error when an instruction outside it`s boundary is fetched,
    * so the system will halt if an unset interrupt is triggered.
    */
-  explicit IoTable(std::array<zagros::Callback*, zagros::IO_TABLE_SIZE> callbacks) : callbacks{callbacks} {
+  explicit IoTable(std::array<Callback*, IO_TABLE_SIZE> callbacks) : callbacks{callbacks} {
 
   }
 
@@ -59,7 +58,7 @@ class IoTable {
    * @param id The I/O id.
    */
   void call(size_t id) const noexcept {
-    if (id >= zagros::INTERRUPT_TABLE_SIZE) {
+    if (id >= INTERRUPT_TABLE_SIZE) {
       return;
     }
 
@@ -80,6 +79,6 @@ class IoTable {
   }
 };
 
-}
+
 
 #endif //ZAGROS_IO

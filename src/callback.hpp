@@ -7,8 +7,6 @@
 
 #include <string>
 
-namespace zagros {
-
 class Callback {
  public:
   virtual ~Callback() {  }
@@ -32,5 +30,4 @@ class Caller {
   }
   void call() { if (_callback) _callback->run(); }
 };
-}
 #endif //ZAGROS_CALLBACK

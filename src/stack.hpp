@@ -5,7 +5,6 @@
 #ifndef ZAGROS_STACK
 #define ZAGROS_STACK
 
-namespace zagros {
 /**
 * A stack type for arr. Unsafe because `guard` method must be called and
 * have it`s result checked before pushing or popping.
@@ -14,7 +13,7 @@ namespace zagros {
 class DataStack {
  private:
   /// The stack`s data.
-  std::__1::array<zagros::Cell, zagros::DATA_STACK_SIZE> arr;
+  std::array<Cell, DATA_STACK_SIZE> arr;
 
   /// The stack`s top index.
   size_t top = 0;
@@ -31,21 +30,21 @@ class DataStack {
    * @param pushes The number of pushes to be performed.
    * @return Success if the stack is safe, Error otherwise.
    */
-  auto guard(size_t pops, size_t pushes) const noexcept -> zagros::result<> {
-    if (top + pushes > zagros::DATA_STACK_SIZE) {
-      return {zagros::Error::DataStackOverflow, zagros::Unit{}};
+  auto guard(size_t pops, size_t pushes) const noexcept -> result<> {
+    if (top + pushes > DATA_STACK_SIZE) {
+      return {Error::DataStackOverflow, Unit{}};
     }
     if (top < pops) {
-      return {zagros::Error::DataStackUnderflow, zagros::Unit{}};
+      return {Error::DataStackUnderflow, Unit{}};
     }
-    return {zagros::Error::None, zagros::Unit{}};
+    return {Error::None, Unit{}};
   }
 
   /**
    * Pushes a value onto the stack.
    * @param value The value to be pushed.
    */
-  auto push(zagros::Cell value) noexcept -> void {
+  auto push(Cell value) noexcept -> void {
     arr[top++] = value;
   }
 
@@ -53,7 +52,7 @@ class DataStack {
    * Pops a value off the stack.
    * @return The value popped off the stack.
    */
-  auto pop() noexcept -> zagros::Cell {
+  auto pop() noexcept -> Cell {
     return arr[--top];
   }
 
@@ -68,8 +67,8 @@ class DataStack {
    * Gets a snapshot of the stack.
    * @return A snapshot of the stack.
    */
-  auto snapshot() const noexcept -> zagros::DataStackSnapshot {
-    return zagros::DataStackSnapshot{arr, top};
+  auto snapshot() const noexcept -> DataStackSnapshot {
+    return DataStackSnapshot{arr, top};
   }
 };
 /**
@@ -78,7 +77,7 @@ class DataStack {
 class AddressStack {
  private:
   /// The stack`s data.
-  std::__1::array<zagros::Cell, zagros::ADDRESS_STACK_SIZE> arr;
+  std::array<Cell, ADDRESS_STACK_SIZE> arr;
 
   /// The stack`s top index.
   size_t top = 0;
@@ -94,24 +93,24 @@ class AddressStack {
    * @param value The value to be pushed.
    * @return Success if the operation is successful, Error otherwise.
    */
-  auto push(zagros::Cell value) noexcept -> zagros::result<> {
-    if (top >= zagros::ADDRESS_STACK_SIZE) {
-      return {zagros::Error::AddressStackOverflow, zagros::Unit{}};
+  auto push(Cell value) noexcept -> result<> {
+    if (top >= ADDRESS_STACK_SIZE) {
+      return {Error::AddressStackOverflow, Unit{}};
     }
     arr[top++] = value;
-    return {zagros::Error::None, zagros::Unit{}};
+    return {Error::None, Unit{}};
   }
 
   /**
    * Pops a value off the stack.
    * @return The value if the operation is successful, Error otherwise.
    */
-  auto pop() noexcept -> zagros::result<zagros::Cell> {
+  auto pop() noexcept -> result<Cell> {
     if (top == 0) {
-      return {zagros::Error::AddressStackUnderflow, zagros::Cell{}};
+      return {Error::AddressStackUnderflow, Cell{}};
     }
     const auto value = arr[--top];
-    return {zagros::Error::None, value};
+    return {Error::None, value};
   }
 
   /**
@@ -125,11 +124,11 @@ class AddressStack {
    * Gets a snapshot of the stack.
    * @return A snapshot of the stack.
    */
-  auto snapshot() const noexcept -> zagros::AddressStackSnapshot {
+  auto snapshot() const noexcept -> AddressStackSnapshot {
     return AddressStackSnapshot{arr, top};
   }
 };
-}
+
 #include <algorithm>
 #include <array>
 #include <bit>

@@ -19,7 +19,6 @@
 #include "snapshot.hpp"
 #include "stack.hpp"
 
-namespace zagros {
 /**
  * A bank of registers.
  * @tparam S Size of the bank.
@@ -28,13 +27,13 @@ namespace zagros {
 class RegisterBank {
  private:
   /// The bank`s arr.
-  std::__1::array<zagros::Cell, zagros::REGISTER_BANK_SIZE> arr;
+  std::array<Cell, REGISTER_BANK_SIZE> arr;
  public:
   /**
    * Constructs a new register bank. All registers are initialized to 0.
    */
   RegisterBank() noexcept {
-    std::fill(arr.begin(), arr.end(), zagros::Cell{});
+    std::fill(arr.begin(), arr.end(), Cell{});
   }
 
   /**
@@ -42,12 +41,12 @@ class RegisterBank {
    * @param id The register`s id.
    * @return The value if the operation is successful, Error otherwise.
    */
-  auto read(size_t id) const noexcept -> zagros::result<zagros::Cell> {
-    if (id >= zagros::REGISTER_BANK_SIZE) {
-      return {zagros::Error::IllegalRegisterId, zagros::Cell{}};
+  auto read(size_t id) const noexcept -> result<Cell> {
+    if (id >= REGISTER_BANK_SIZE) {
+      return {Error::IllegalRegisterId, Cell{}};
     }
     const auto value = arr[id];
-    return {zagros::Error::None, value};
+    return {Error::None, value};
   }
 
   /**
@@ -56,29 +55,29 @@ class RegisterBank {
    * @param value The value to be set.
    * @return Success if the operation is successful, Error otherwise.
    */
-  auto write(size_t id, zagros::Cell value) noexcept -> zagros::result<> {
-    if (id >= zagros::REGISTER_BANK_SIZE) {
-      return {zagros::Error::IllegalRegisterId, zagros::Unit{}};
+  auto write(size_t id, Cell value) noexcept -> result<> {
+    if (id >= REGISTER_BANK_SIZE) {
+      return {Error::IllegalRegisterId, Unit{}};
     }
     arr[id] = value;
-    return {zagros::Error::None, zagros::Unit{}};
+    return {Error::None, Unit{}};
   }
 
   /**
    * Clears the bank.
    */
   auto clear() noexcept -> void {
-    std::fill(arr.begin(), arr.end(), zagros::Cell{});
+    std::fill(arr.begin(), arr.end(), Cell{});
   }
 
   /**
    * Gets a snapshot of the bank.
    * @return A snapshot of the bank.
    */
-  auto snapshot() const noexcept -> zagros::RegisterBankSnapshot {
-    return zagros::RegisterBankSnapshot(arr);
+  auto snapshot() const noexcept -> RegisterBankSnapshot {
+    return RegisterBankSnapshot(arr);
   }
 };
-}
+
 
 #endif //ZAGROS_REGISTER

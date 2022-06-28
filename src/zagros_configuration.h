@@ -5,7 +5,6 @@
 #ifndef ZAGROS_CONFIGURATION
 #define ZAGROS_CONFIGURATION
 
-namespace zagros {
 
 #include <cstdlib>
 
@@ -38,6 +37,6 @@ static const size_t IO_MEMORY_ADDRESS_END = 192;
 /// Number of cores of the virtual machine
 static const size_t CORE_COUNT = 2;
 
-}
+
 
 #endif //ZAGROS_CONFIGURATION

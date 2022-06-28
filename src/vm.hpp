@@ -21,7 +21,6 @@
 #include "io.h"
 #include "core.hpp"
 
-namespace zagros {
 
 /**
  * The Zagros VM.
@@ -2288,11 +2287,11 @@ class VM {
    * @param byte The byte of memory.
    * @return Result of the operation
    */
-  zagros::result<> io_write(size_t addr, uint8_t byte) noexcept {
+  result<> io_write(size_t addr, uint8_t byte) noexcept {
     return mem.write_io_byte(addr, byte);
   }
 
-  zagros::result<uint8_t> io_read(size_t addr) noexcept {
+  result<uint8_t> io_read(size_t addr) noexcept {
     return mem.read_io_byte(addr);
   }
 
@@ -2314,5 +2313,5 @@ class VM {
   }
 };
 
-}
+
 #endif //ZAGROS

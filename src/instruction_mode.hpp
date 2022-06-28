@@ -5,7 +5,6 @@
 #ifndef ZAGROS_INSTRUCTION_MODE
 #define ZAGROS_INSTRUCTION_MODE
 
-namespace zagros {
 /**
  * Operation mode for the Core.
  */
@@ -35,5 +34,5 @@ enum AddressMode {
    */
   RELATIVE
 };
-}
+
 #endif //ZAGROS_INSTRUCTION_MODE

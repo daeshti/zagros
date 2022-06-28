@@ -20,7 +20,6 @@
 #include "stack.hpp"
 #include "register.hpp"
 
-namespace zagros {
 
 /**
  * A memory.
@@ -29,7 +28,7 @@ namespace zagros {
 class Memory {
  private:
   /// The memory`s data.
-  std::array<uint8_t, zagros::MEMORY_SIZE> arr;
+  std::array<uint8_t, MEMORY_SIZE> arr;
  public:
   /**
    * Constructs a new memory bank. All memory is initialized to 0.
@@ -42,12 +41,12 @@ class Memory {
    * @param addr The addr.
    * @return The opcode if `addr` is in range, `SystemHalt` otherwise.
    */
-  auto fetch_opcode(size_t addr) const noexcept -> zagros::result<uint8_t> {
-    if (addr >= zagros::MEMORY_SIZE) {
-      return {zagros::Error::SystemHalt, uint8_t{}};
+  auto fetch_opcode(size_t addr) const noexcept -> result<uint8_t> {
+    if (addr >= MEMORY_SIZE) {
+      return {Error::SystemHalt, uint8_t{}};
     }
     const auto opcode = arr[addr];
-    return {zagros::Error::None, opcode};
+    return {Error::None, opcode};
   }
 
   /**
@@ -58,10 +57,10 @@ class Memory {
    * otherwise and error result with `Error::IllegalMemoryAddress`.
    */
   template<size_t BS>
-  auto read_bytes(size_t addr) const noexcept -> zagros::result<zagros::Cell> {
+  auto read_bytes(size_t addr) const noexcept -> result<Cell> {
     static_assert(BS <= 4, "Cell don't have more than 4 bytes.");
-    if (addr + BS > zagros::MEMORY_SIZE) {
-      return {zagros::Error::IllegalMemoryAddress, zagros::Cell{}};
+    if (addr + BS > MEMORY_SIZE) {
+      return {Error::IllegalMemoryAddress, Cell{}};
     }
     // Uninitialized because all bytes will be written to.
     std::array<uint8_t, 4> dst; // NOLINT(cppcoreguidelines-pro-type-member-init)
@@ -72,7 +71,7 @@ class Memory {
     for (; i < 4; ++i) {
       dst[i] = 0;
     }
-    return {zagros::Error::None, zagros::Cell{dst}};
+    return {Error::None, Cell{dst}};
   }
 
   /**
@@ -82,17 +81,17 @@ class Memory {
    * @param orig The origin addrs.
    * @return The result of the comparison if operation is successful, Error otherwise.
    */
-  auto compare_block(size_t len, size_t dst, size_t orig) const noexcept -> zagros::result<zagros::Cell> {
-    if (dst + len > zagros::MEMORY_SIZE) {
-      return {zagros::Error::IllegalMemoryAddress, zagros::Cell{}};
+  auto compare_block(size_t len, size_t dst, size_t orig) const noexcept -> result<Cell> {
+    if (dst + len > MEMORY_SIZE) {
+      return {Error::IllegalMemoryAddress, Cell{}};
     }
-    if (orig + len > zagros::MEMORY_SIZE) {
-      return {zagros::Error::IllegalMemoryAddress, zagros::Cell{}};
+    if (orig + len > MEMORY_SIZE) {
+      return {Error::IllegalMemoryAddress, Cell{}};
     }
     if (std::equal(arr.begin() + dst, arr.begin() + dst + len, arr.begin() + orig)) {
-      return {zagros::Error::None, zagros::Cell{true}};
+      return {Error::None, Cell{true}};
     }
-    return {zagros::Error::None, zagros::Cell{true}};
+    return {Error::None, Cell{true}};
   }
 
   /**
@@ -104,16 +103,16 @@ class Memory {
    * otherwise and error result with `Error::IllegalMemoryAddress`.
    * */
   template<size_t BS>
-  auto write_bytes(size_t addr, zagros::Cell value) noexcept -> zagros::result<> {
+  auto write_bytes(size_t addr, Cell value) noexcept -> result<> {
     static_assert(BS <= 4, "Cell don't have more than 4 bytes.");
-    if (addr + BS > zagros::MEMORY_SIZE) {
-      return {zagros::Error::IllegalMemoryAddress, zagros::Unit{}};
+    if (addr + BS > MEMORY_SIZE) {
+      return {Error::IllegalMemoryAddress, Unit{}};
     }
     auto src = value.to_bytes();
     for (int i = 0; i < BS; ++i) {
       arr[addr + i] = src[i];
     }
-    return {zagros::Error::None, zagros::Unit{}};
+    return {Error::None, Unit{}};
   }
 
   /**
@@ -123,25 +122,25 @@ class Memory {
    * @param orig The origin addrs.
    * @return
    */
-  auto copy_block(size_t len, size_t dst, size_t orig) noexcept -> zagros::result<> {
-    if (dst + len > zagros::MEMORY_SIZE || orig + len > zagros::MEMORY_SIZE) {
-      return {zagros::Error::IllegalMemoryAddress, zagros::Unit{}};
+  auto copy_block(size_t len, size_t dst, size_t orig) noexcept -> result<> {
+    if (dst + len > MEMORY_SIZE || orig + len > MEMORY_SIZE) {
+      return {Error::IllegalMemoryAddress, Unit{}};
     }
     std::copy_n(arr.begin() + orig, len, arr.begin() + dst);
-    return {zagros::Error::None, zagros::Unit{}};
+    return {Error::None, Unit{}};
   }
 
   /**
    * Loads the memory from a memory array.
    * @param prg The memory array.
    */
-  auto load_program(std::array<uint8_t, zagros::MEMORY_SIZE> prg, size_t prg_size) noexcept -> zagros::result<> {
-    if (prg_size > zagros::MEMORY_SIZE) {
-      return {zagros::Error::IllegalMemoryAddress, zagros::Unit{}};
+  auto load_program(std::array<uint8_t, MEMORY_SIZE> prg, size_t prg_size) noexcept -> result<> {
+    if (prg_size > MEMORY_SIZE) {
+      return {Error::IllegalMemoryAddress, Unit{}};
     }
     // Copy the program into the memory.
     std::copy_n(prg.begin(), prg_size, arr.begin());
-    return {zagros::Error::None, zagros::Unit{}};
+    return {Error::None, Unit{}};
   }
 
   /**
@@ -150,12 +149,12 @@ class Memory {
    * @param byte The byte of memory.
    * @return Error if address is illegal, Success otherwise.
    */
-  auto write_io_byte(size_t addr, uint8_t byte) noexcept -> zagros::result<> {
+  auto write_io_byte(size_t addr, uint8_t byte) noexcept -> result<> {
     if (addr < IO_MEMORY_ADDRESS_BEGIN || addr >= IO_MEMORY_ADDRESS_END) {
-      return {zagros::Error::IllegalMemoryAddress, zagros::Unit{}};
+      return {Error::IllegalMemoryAddress, Unit{}};
     }
     arr[addr] = byte;
-    return {zagros::Error::None, Unit{}};
+    return {Error::None, Unit{}};
   }
 
   /**
@@ -163,11 +162,11 @@ class Memory {
    * @param addr The address of memory byte
    * @return Error if address is illegal, Success otherwise.
    */
-  auto read_io_byte(size_t addr) noexcept -> zagros::result<uint8_t> {
+  auto read_io_byte(size_t addr) noexcept -> result<uint8_t> {
     if (addr < IO_MEMORY_ADDRESS_BEGIN || addr >= IO_MEMORY_ADDRESS_END) {
-      return {zagros::Error::IllegalMemoryAddress, uint8_t {}};
+      return {Error::IllegalMemoryAddress, uint8_t {}};
     }
-    return {zagros::Error::None, arr[addr]};
+    return {Error::None, arr[addr]};
   }
 
   /**
@@ -181,10 +180,10 @@ class Memory {
    * Returns a snapshot of the memory.
    * @return A snapshot of the memory.
    */
-  auto snapshot() const noexcept -> zagros::MemorySnapshot {
-    return zagros::MemorySnapshot(arr);
+  auto snapshot() const noexcept -> MemorySnapshot {
+    return MemorySnapshot(arr);
   }
 };
-}
+
 
 #endif //ZAGROS_MEMORY

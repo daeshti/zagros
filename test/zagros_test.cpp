@@ -1,8 +1,6 @@
 #include "gtest/gtest.h"
 #include "../src/vm.hpp"
 
-namespace zagros {
-
 TEST(DataStack, PushPop) {
   auto stack = DataStack{};
   stack.push(Cell{1});
@@ -1726,4 +1724,3 @@ TEST(VM, InvokeIOWorks) {
   }
 }
 
-}

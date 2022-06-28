@@ -7,7 +7,6 @@
 
 #include <utility>
 
-namespace zagros {
 /**
  * A struct to represent an empty / void value.
  */
@@ -63,6 +62,6 @@ enum class Error {
 template<class T=Unit>
 using result = std::pair<Error, T>;
 
-}
+
 
 #endif //ZAGROS_RESULT

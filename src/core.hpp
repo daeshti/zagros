@@ -22,7 +22,6 @@
 #include "memory.hpp"
 #include "interrupt.hpp"
 
-namespace zagros {
 /**
  * The state of a core of the VM.
  * @tparam DS Size of the arr stack.
@@ -36,19 +35,19 @@ class Core {
   bool active = false;
 
   /// The current operation mode.
-  zagros::OpMode op_mode = zagros::OpMode::SIGNED;
+  OpMode op_mode = OpMode::SIGNED;
 
   /// The current addrs mode.
-  zagros::AddressMode addr_mode = zagros::DIRECT;
+  AddressMode addr_mode = DIRECT;
 
   /// The arr stack.
-  zagros::DataStack data;
+  DataStack data;
 
   /// The addrs stack.
-  zagros::AddressStack addrs;
+  AddressStack addrs;
 
   /// The register bank.
-  zagros::RegisterBank regs;
+  RegisterBank regs;
 
   /**
    * Set the core's state as just initialized with current ip.
@@ -57,8 +56,8 @@ class Core {
   auto init(uint32_t init_ip) noexcept -> void {
     ip = init_ip;
     active = false;
-    op_mode = zagros::OpMode::SIGNED;
-    addr_mode = zagros::DIRECT;
+    op_mode = OpMode::SIGNED;
+    addr_mode = DIRECT;
     data.clear();
     addrs.clear();
     regs.clear();
@@ -68,10 +67,9 @@ class Core {
    * Gets a snapshot of the core.
    * @return A snapshot of the core.
    */
-  auto snapshot() const noexcept -> zagros::CoreSnapshot {
+  auto snapshot() const noexcept -> CoreSnapshot {
     return {ip, active, op_mode, addr_mode, data.snapshot(), addrs.snapshot(), regs.snapshot()};
   }
 };
-}
 
 #endif //ZAGROS_CORE
