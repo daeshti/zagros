@@ -333,13 +333,6 @@ class IoTableSnapshot {
   /// The table`s callback descriptions
   const std::vector<std::string> arr;
 
-  /**
-   * Returns the table`s arr.
-   * @return The table`s arr.
-   */
-  const std::vector<std::string> &get_arr() const noexcept {
-    return arr;
-  }
 
  public:
 /**
@@ -347,6 +340,14 @@ class IoTableSnapshot {
  * @param data The table`s arr.
  */
   explicit IoTableSnapshot(std::vector<std::string> arr) noexcept: arr(std::move(arr)) {}
+
+  /**
+   * Returns the table`s arr.
+   * @return The table`s arr.
+   */
+  const std::vector<std::string> &get_arr() const noexcept {
+    return arr;
+  }
 };
 
 /**

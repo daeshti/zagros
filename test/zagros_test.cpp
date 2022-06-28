@@ -1637,4 +1637,93 @@ TEST(VM, InstructionFloatModeModeWorks) {
   ASSERT_EQ(core.get_op_mode(), OpMode::FLOAT);
 }
 
+class TestCallback : public Callback {
+ private:
+  const uint32_t id;
+  bool called = false;
+
+ public:
+
+  TestCallback(const uint32_t id) : id(id) {
+  }
+
+  void run() override {
+    called = true;
+  }
+
+  std::string description() override {
+    std::stringstream ss;
+    ss << "Test Callback " << id;
+    return ss.str();
+  }
+
+  const uint32_t get_id() const {
+    return id;
+  }
+
+  bool is_called() const {
+    return called;
+  }
+
+};
+
+auto loaded_vm(const program &prg, std::array<Callback*, IO_TABLE_SIZE> callbacks) -> VM {
+  std::vector<uint8_t> bytes;
+
+  for (const auto &instr : prg) {
+    std::visit(overloaded{
+        [&bytes](OpCode op) {
+          bytes.push_back(static_cast<uint8_t>(op));
+        },
+        [&bytes](uint8_t value) {
+          bytes.push_back(value);
+        },
+        [&bytes](uint16_t value) {
+          bytes.push_back(value & 0xFF);
+          bytes.push_back(value >> 8);
+        },
+        [&bytes](uint32_t value) {
+          bytes.push_back(value & 0xFF);
+          bytes.push_back((value >> 8) & 0xFF);
+          bytes.push_back((value >> 16) & 0xFF);
+          bytes.push_back(value >> 24);
+        },
+    }, instr);
+  }
+
+  auto io_table = IoTable {callbacks};
+  VM vm = VM(io_table);
+  std::array<uint8_t, 65535> byte_arr{};
+  std::copy_n(bytes.begin(), 65535, byte_arr.begin());
+  vm.load_program(byte_arr, bytes.size());
+  return vm;
+}
+
+TEST(VM, InvokeIOWorks) {
+  program prg;
+  std::array<TestCallback*, IO_TABLE_SIZE> test_callbacks;
+  std::array<Callback*, IO_TABLE_SIZE> callbacks;
+
+  for (uint8_t i = 0; i < IO_TABLE_SIZE; ++i) {
+    auto callback = new TestCallback(i);
+    test_callbacks[i] = callback;
+    callbacks[i] = callback;
+    prg.push_back(OpCode::LB);
+    prg.push_back((uint8_t) i);
+    prg.push_back(OpCode::II);
+  }
+  prg.push_back(OpCode::HS);
+  auto vm = loaded_vm(prg, callbacks);
+  vm.run();
+  auto const &ss = vm.snapshot();
+  auto core = ss.get_cores()[0];
+  ASSERT_EQ(core.get_ip(), 3 * IO_TABLE_SIZE);
+  ASSERT_EQ(core.get_op_mode(), OpMode::SIGNED);
+  for (uint8_t i = 0; i < IO_TABLE_SIZE; ++i) {
+    auto callback = test_callbacks[i];
+    EXPECT_EQ(callback->get_id(), i);
+    EXPECT_EQ(callback->is_called(), true);
+  }
+}
+
 }

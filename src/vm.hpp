@@ -1255,8 +1255,10 @@ class VM {
    */
   auto i_invoke_io() noexcept -> result<> {
 
+    // Get the current core.
     auto &core = cores[cur_core_id];
 
+    // Guard the stack for 1 stack_pop.
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
@@ -1264,9 +1266,15 @@ class VM {
       return {guard_err, Unit{}};
     }
 
+    // Get the current I/O id
     auto io_id = core.data.pop().to_size();
+    // Call the I/O
     io_table.call(io_id);
 
+    // Increment the ip.
+    core.ip += 1;
+
+    // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
     return {Error::None, Unit{}};
@@ -2260,7 +2268,10 @@ class VM {
    * @param io_table The IO table
    */
   explicit VM(IoTable io_table) : io_table{io_table} {
-
+    for (auto &core : cores) {
+      core = Core{};
+    }
+    cores[0].active = true;
   }
 
   /**
