@@ -28,16 +28,15 @@ typedef unsigned char uint8_t;
 %include <std_array.i>
 %include <std_pair.i>
 %include <std_vector.i>
-%include "std_tuple.i"
-%template(Triple) std::tuple<Error, Cell, Cell>;
 
 %include "../src/result.hpp"
-%template() result<Cell>;
-%template() result<Unit>;
-%template() result<uint8_t>;
+%template() outcome<Cell>;
+%template() outcome<Unit>;
+%template() outcome<uint8_t>;
 %template(CellResult) std::pair<Error, Cell>;
 %template(UnitResult) std::pair<Error, Unit>;
 %template(ByteResult) std::pair<Error, uint8_t>;
+%template(TripleResult) Triple<Error, Cell, Cell>;
 
 
 %include "../src/instruction_mode.hpp"

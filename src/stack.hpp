@@ -7,7 +7,7 @@
 
 /**
 * A stack type for arr. Unsafe because `guard` method must be called and
-* have it`s result checked before pushing or popping.
+* have it`s outcome checked before pushing or popping.
 * Otherwise push and stack_pop will have undefined behavior.
 */
 class DataStack {
@@ -30,7 +30,7 @@ class DataStack {
    * @param pushes The number of pushes to be performed.
    * @return Success if the stack is safe, Error otherwise.
    */
-  auto guard(size_t pops, size_t pushes) const noexcept -> result<> {
+  auto guard(size_t pops, size_t pushes) const noexcept -> outcome<> {
     if (top + pushes > DATA_STACK_SIZE) {
       return {Error::DataStackOverflow, Unit{}};
     }
@@ -72,7 +72,7 @@ class DataStack {
   }
 };
 /**
- * A stack type for addresses. Safe because all unsafe operations return `result`.
+ * A stack type for addresses. Safe because all unsafe operations return `outcome`.
  */
 class AddressStack {
  private:
@@ -93,7 +93,7 @@ class AddressStack {
    * @param value The value to be pushed.
    * @return Success if the operation is successful, Error otherwise.
    */
-  auto push(Cell value) noexcept -> result<> {
+  auto push(Cell value) noexcept -> outcome<> {
     if (top >= ADDRESS_STACK_SIZE) {
       return {Error::AddressStackOverflow, Unit{}};
     }
@@ -105,7 +105,7 @@ class AddressStack {
    * Pops a value off the stack.
    * @return The value if the operation is successful, Error otherwise.
    */
-  auto pop() noexcept -> result<Cell> {
+  auto pop() noexcept -> outcome<Cell> {
     if (top == 0) {
       return {Error::AddressStackUnderflow, Cell{}};
     }

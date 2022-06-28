@@ -217,7 +217,7 @@ class Cell {
    * Addition operation.
    * @param rhs The right hand side of the addition.
    * @param op_mode The operation mode to use.
-   * @return The result of the addition.
+   * @return The outcome of the addition.
    */
   Cell add(const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
@@ -237,7 +237,7 @@ class Cell {
    * Subtraction operation.
    * @param rhs The right hand side of the subtraction.
    * @param op_mode The operation mode to use.
-   * @return The result of the subtraction.
+   * @return The outcome of the subtraction.
    */
   Cell subtract(const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
@@ -257,7 +257,7 @@ class Cell {
    * Multiplication operation.
    * @param rhs The right hand side of the multiplication.
    * @param op_mode The operation mode to use.
-   * @return The result of the multiplication.
+   * @return The outcome of the multiplication.
    */
   Cell multiply(const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
@@ -280,32 +280,32 @@ class Cell {
    * @return a tuple of (Error::DivisionByZero, _, _) if the dominator is zero,
    * otherwise a tuple of (Error::None, Modulo, Quotient).
    */
-  std::tuple<Error, Cell, Cell> divide_remainder(const Cell rhs,
+  Triple<Error, Cell, Cell> divide_remainder(const Cell rhs,
                                                       OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
         if (rhs.to_int32() == 0) {
-          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+          return {Error::DivisionByZero, Cell(0), Cell(0)};
         }
-        return std::make_tuple(Error::None,
+        return {Error::None,
                                Cell(this->to_int32() % rhs.to_int32()),
-                               Cell(this->to_int32() / rhs.to_int32()));
+                               Cell(this->to_int32() / rhs.to_int32())};
       }
       case OpMode::UNSIGNED: {
         if (rhs.to_uint32() == 0) {
-          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+          return {Error::DivisionByZero, Cell(0), Cell(0)};
         }
-        return std::make_tuple(Error::None,
+        return {Error::None,
                                Cell(this->to_uint32() % rhs.to_uint32()),
-                               Cell(this->to_uint32() / rhs.to_uint32()));
+                               Cell(this->to_uint32() / rhs.to_uint32())};
       }
       case OpMode::FLOAT: {
         if (rhs.to_float() == 0.0) {
-          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+          return {Error::DivisionByZero, Cell(0), Cell(0)};
         }
-        return std::make_tuple(Error::None,
+        return {Error::None,
                                Cell(fmod(this->to_float(), rhs.to_float())),
-                               Cell(this->to_float() / rhs.to_float()));
+                               Cell(this->to_float() / rhs.to_float())};
       }
     }
   }
@@ -318,12 +318,12 @@ class Cell {
    * @return a tuple of (Error::DivisionByZero, _, _) if the dominator is zero,
    * otherwise a tuple of (Error::None, Modulo, Quotient).
    */
-  std::tuple<Error, Cell, Cell> multiply_divide_remainder(
+  Triple<Error, Cell, Cell> multiply_divide_remainder(
       const Cell mul, const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
         if (rhs.to_int32() == 0) {
-          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+          return {Error::DivisionByZero, Cell(0), Cell(0)};
         }
         return {Error::None,
                 Cell((this->to_int32() * mul.to_int32()) % rhs.to_int32()),
@@ -331,7 +331,7 @@ class Cell {
       }
       case OpMode::UNSIGNED: {
         if (rhs.to_uint32() == 0) {
-          return std::make_tuple(Error::DivisionByZero, Cell(0), Cell(0));
+          return {Error::DivisionByZero, Cell(0), Cell(0)};
         }
         return {Error::None,
                 Cell((this->to_uint32() * mul.to_uint32()) % rhs.to_uint32()),
@@ -353,7 +353,7 @@ class Cell {
   /**
    * Bitwise AND operation.
    * @param rhs The right hand side of the operation.
-   * @return The result of the operation.
+   * @return The outcome of the operation.
    */
   Cell bitwise_and(const Cell rhs) const noexcept {
     return Cell(this->to_uint32() & rhs.to_uint32());
@@ -362,7 +362,7 @@ class Cell {
   /**
    * Bitwise OR operation.
    * @param rhs The right hand side of the operation.
-   * @return The result of the operation.
+   * @return The outcome of the operation.
    */
   Cell bitwise_or(const Cell rhs) const noexcept {
     uint32_t left;
@@ -376,7 +376,7 @@ class Cell {
   /**
    * Bitwise XOR operation.
    * @param rhs The right hand side of the operation.
-   * @return The result of the operation.
+   * @return The outcome of the operation.
    */
   Cell bitwise_xor(const Cell rhs) const noexcept {
     return Cell(this->to_uint32() ^ rhs.to_uint32());
@@ -384,7 +384,7 @@ class Cell {
 
   /**
    * Bitwise NOT operation.
-   * @return The result of the operation.
+   * @return The outcome of the operation.
    */
   Cell bitwise_not() const noexcept {
     return Cell(~this->to_uint32());
@@ -397,7 +397,7 @@ class Cell {
    * @return a pair of (Error::InvalidFloatOperation, _) if any of the arguments is a float,
    * otherwise a pair of (Error::None, Result).
    */
-  result<Cell> bitwise_shift_left(const Cell rhs, OpMode op_mode) const noexcept {
+  outcome<Cell> bitwise_shift_left(const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
         return {Error::None, Cell(this->to_int32() << rhs.to_int32())};
@@ -418,7 +418,7 @@ class Cell {
    * @return a pair of (Error::InvalidFloatOperation, _) if any of the arguments is a float,
    * otherwise a pair of (Error::None, Result).
    */
-  result<Cell> bitwise_shift_right(const Cell rhs, OpMode op_mode) const noexcept {
+  outcome<Cell> bitwise_shift_right(const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
         return {Error::None, Cell(this->to_int32() >> rhs.to_int32())};

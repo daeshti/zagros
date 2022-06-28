@@ -41,7 +41,7 @@ class Memory {
    * @param addr The addr.
    * @return The opcode if `addr` is in range, `SystemHalt` otherwise.
    */
-  auto fetch_opcode(size_t addr) const noexcept -> result<uint8_t> {
+  auto fetch_opcode(size_t addr) const noexcept -> outcome<uint8_t> {
     if (addr >= MEMORY_SIZE) {
       return {Error::SystemHalt, uint8_t{}};
     }
@@ -53,11 +53,11 @@ class Memory {
    * Reads bytes from memory location
    * @tparam BS The count of bytes to read
    * @param addr The address of the memory location
-   * @return A success result with the bytes if `addr` is legal,
-   * otherwise and error result with `Error::IllegalMemoryAddress`.
+   * @return A success outcome with the bytes if `addr` is legal,
+   * otherwise and error outcome with `Error::IllegalMemoryAddress`.
    */
   template<size_t BS>
-  auto read_bytes(size_t addr) const noexcept -> result<Cell> {
+  auto read_bytes(size_t addr) const noexcept -> outcome<Cell> {
     static_assert(BS <= 4, "Cell don't have more than 4 bytes.");
     if (addr + BS > MEMORY_SIZE) {
       return {Error::IllegalMemoryAddress, Cell{}};
@@ -79,9 +79,9 @@ class Memory {
    * @param len The number of bytes to compare.
    * @param dst The destination addrs.
    * @param orig The origin addrs.
-   * @return The result of the comparison if operation is successful, Error otherwise.
+   * @return The outcome of the comparison if operation is successful, Error otherwise.
    */
-  auto compare_block(size_t len, size_t dst, size_t orig) const noexcept -> result<Cell> {
+  auto compare_block(size_t len, size_t dst, size_t orig) const noexcept -> outcome<Cell> {
     if (dst + len > MEMORY_SIZE) {
       return {Error::IllegalMemoryAddress, Cell{}};
     }
@@ -99,11 +99,11 @@ class Memory {
    * @tparam BS The number of bytes to be copied from the value.
    * @param addr The addrs.
    * @param value The value.
-   * @return A success result if `addr` is legal,
-   * otherwise and error result with `Error::IllegalMemoryAddress`.
+   * @return A success outcome if `addr` is legal,
+   * otherwise and error outcome with `Error::IllegalMemoryAddress`.
    * */
   template<size_t BS>
-  auto write_bytes(size_t addr, Cell value) noexcept -> result<> {
+  auto write_bytes(size_t addr, Cell value) noexcept -> outcome<> {
     static_assert(BS <= 4, "Cell don't have more than 4 bytes.");
     if (addr + BS > MEMORY_SIZE) {
       return {Error::IllegalMemoryAddress, Unit{}};
@@ -122,7 +122,7 @@ class Memory {
    * @param orig The origin addrs.
    * @return
    */
-  auto copy_block(size_t len, size_t dst, size_t orig) noexcept -> result<> {
+  auto copy_block(size_t len, size_t dst, size_t orig) noexcept -> outcome<> {
     if (dst + len > MEMORY_SIZE || orig + len > MEMORY_SIZE) {
       return {Error::IllegalMemoryAddress, Unit{}};
     }
@@ -134,7 +134,7 @@ class Memory {
    * Loads the memory from a memory array.
    * @param prg The memory array.
    */
-  auto load_program(std::array<uint8_t, MEMORY_SIZE> prg, size_t prg_size) noexcept -> result<> {
+  auto load_program(std::array<uint8_t, MEMORY_SIZE> prg, size_t prg_size) noexcept -> outcome<> {
     if (prg_size > MEMORY_SIZE) {
       return {Error::IllegalMemoryAddress, Unit{}};
     }
@@ -149,7 +149,7 @@ class Memory {
    * @param byte The byte of memory.
    * @return Error if address is illegal, Success otherwise.
    */
-  auto write_io_byte(size_t addr, uint8_t byte) noexcept -> result<> {
+  auto write_io_byte(size_t addr, uint8_t byte) noexcept -> outcome<> {
     if (addr < IO_MEMORY_ADDRESS_BEGIN || addr >= IO_MEMORY_ADDRESS_END) {
       return {Error::IllegalMemoryAddress, Unit{}};
     }
@@ -162,7 +162,7 @@ class Memory {
    * @param addr The address of memory byte
    * @return Error if address is illegal, Success otherwise.
    */
-  auto read_io_byte(size_t addr) noexcept -> result<uint8_t> {
+  auto read_io_byte(size_t addr) noexcept -> outcome<uint8_t> {
     if (addr < IO_MEMORY_ADDRESS_BEGIN || addr >= IO_MEMORY_ADDRESS_END) {
       return {Error::IllegalMemoryAddress, uint8_t {}};
     }

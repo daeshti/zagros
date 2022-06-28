@@ -41,7 +41,7 @@ class RegisterBank {
    * @param id The register`s id.
    * @return The value if the operation is successful, Error otherwise.
    */
-  auto read(size_t id) const noexcept -> result<Cell> {
+  auto read(size_t id) const noexcept -> outcome<Cell> {
     if (id >= REGISTER_BANK_SIZE) {
       return {Error::IllegalRegisterId, Cell{}};
     }
@@ -55,7 +55,7 @@ class RegisterBank {
    * @param value The value to be set.
    * @return Success if the operation is successful, Error otherwise.
    */
-  auto write(size_t id, Cell value) noexcept -> result<> {
+  auto write(size_t id, Cell value) noexcept -> outcome<> {
     if (id >= REGISTER_BANK_SIZE) {
       return {Error::IllegalRegisterId, Unit{}};
     }

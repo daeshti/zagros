@@ -74,7 +74,7 @@ class VM {
    * Does nothing.
    * @return Unit. Always successful.
    */
-  auto i_nop() -> result<> {
+  auto i_nop() -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -95,7 +95,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   template<size_t S>
-  auto i_load(size_t addr_offset, size_t i_len) -> result<> {
+  auto i_load(size_t addr_offset, size_t i_len) -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -133,7 +133,7 @@ class VM {
    * It will increment the `ip` and push the word value to the stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_load_word() noexcept -> result<> {
+  auto i_load_word() noexcept -> outcome<> {
     return i_load<4>(4, 8);
   }
 
@@ -142,7 +142,7 @@ class VM {
    * The value is taken from the following two slots in the memory.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_load_half() noexcept -> result<> {
+  auto i_load_half() noexcept -> outcome<> {
     return i_load<2>(1, 3);
   }
 
@@ -151,7 +151,7 @@ class VM {
    * The value is taken from the following slot in the memory.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_load_byte() noexcept -> result<> {
+  auto i_load_byte() noexcept -> outcome<> {
     return i_load<1>(1, 2);
   }
 
@@ -161,7 +161,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   template<size_t S>
-  auto i_fetch() -> result<> {
+  auto i_fetch() -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -198,7 +198,7 @@ class VM {
    * Fetches a word value from memory.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_fetch_word() noexcept -> result<> {
+  auto i_fetch_word() noexcept -> outcome<> {
     return i_fetch<4>();
   }
 
@@ -206,7 +206,7 @@ class VM {
    * Fetches a half-word value from memory.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_fetch_half() noexcept -> result<> {
+  auto i_fetch_half() noexcept -> outcome<> {
     return i_fetch<2>();
   }
 
@@ -214,7 +214,7 @@ class VM {
    * Fetches a byte value from memory.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_fetch_byte() noexcept -> result<> {
+  auto i_fetch_byte() noexcept -> outcome<> {
     return i_fetch<1>();
   }
 
@@ -225,7 +225,7 @@ class VM {
    * @return Unit if the operation was successful. Error otherwise.
    */
   template<size_t S>
-  auto i_store() -> result<> {
+  auto i_store() -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -262,7 +262,7 @@ class VM {
    * Stores a word value to memory.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_store_word() noexcept -> result<> {
+  auto i_store_word() noexcept -> outcome<> {
     return i_store<4>();
   }
 
@@ -270,7 +270,7 @@ class VM {
    * Stores a half-word value to memory.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_store_half() noexcept -> result<> {
+  auto i_store_half() noexcept -> outcome<> {
     return i_store<2>();
   }
 
@@ -278,7 +278,7 @@ class VM {
    * Stores a byte value to memory.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_store_byte() noexcept -> result<> {
+  auto i_store_byte() noexcept -> outcome<> {
     return i_store<1>();
   }
 
@@ -286,7 +286,7 @@ class VM {
    * Duplicates the top value on the stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_dupe() noexcept -> result<> {
+  auto i_dupe() noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -316,7 +316,7 @@ class VM {
    * Discards the top value on the stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_drop() noexcept -> result<> {
+  auto i_drop() noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -343,7 +343,7 @@ class VM {
    * Swaps the top two values on the stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_swap() noexcept -> result<> {
+  auto i_swap() noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -374,7 +374,7 @@ class VM {
    * Pushes the top value on the arr stack to the addrs stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_push_address() noexcept -> result<> {
+  auto i_push_address() noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -408,7 +408,7 @@ class VM {
    * Pops the top value from the addrs stack to the arr stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_pop_address() noexcept -> result<> {
+  auto i_pop_address() noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -445,7 +445,7 @@ class VM {
    */
   auto i_binary_op(
       Cell (*op)(const Cell &, const Cell)
-  ) noexcept -> result<> {
+  ) noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -460,10 +460,10 @@ class VM {
     // Get the values to operate on.
     const auto right = core.data.pop();
     const auto left = core.data.pop();
-    // Compute the result.
+    // Compute the outcome.
     Cell result = op(left, right);
 
-    // Push the result.
+    // Push the outcome.
     core.data.push(result);
 
     // Increment the ip.
@@ -481,7 +481,7 @@ class VM {
  */
   auto i_binary_op(
       Cell (*op)(const Cell &, const Cell, const OpMode)
-  ) noexcept -> result<> {
+  ) noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -496,10 +496,10 @@ class VM {
     // Get the values to operate on.
     const auto right = core.data.pop();
     const auto left = core.data.pop();
-    // Compute the result.
+    // Compute the outcome.
     const auto result = op(left, right, core.op_mode);
 
-    // Push the result.
+    // Push the outcome.
     core.data.push(result);
 
     // Increment the ip.
@@ -517,8 +517,8 @@ class VM {
  * @return Unit if the operation was successful. Error otherwise.
  */
   auto i_binary_op(
-      result<Cell> (*op)(const Cell &, const Cell, const OpMode)
-  ) noexcept -> result<> {
+      outcome<Cell> (*op)(const Cell &, const Cell, const OpMode)
+  ) noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -533,14 +533,14 @@ class VM {
     // Get the values to operate on.
     const auto right = core.data.pop();
     const auto left = core.data.pop();
-    // Compute the result.
+    // Compute the outcome.
     const auto error_result = op(left, right, core.op_mode);
     const auto error = std::get<0>(error_result);
     const auto result = std::get<1>(error_result);
     if (error != Error::None) {
       return {guard_err, Unit{}};
     }
-    // Push the result.
+    // Push the outcome.
     core.data.push(result);
 
     // Increment the ip.
@@ -555,7 +555,7 @@ class VM {
    * Compare two values for equality. Returns true or false on the arr stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_equal() noexcept -> result<> {
+  auto i_equal() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.equal(right);
     });
@@ -565,7 +565,7 @@ class VM {
    * Compare two values for inequality. Returns true if they do not match or false if they do.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_not_equal() noexcept -> result<> {
+  auto i_not_equal() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.not_equal(right);
     });
@@ -575,7 +575,7 @@ class VM {
    * Compare two values for greater than. Returns true if the second stack_pop is less than the first pop.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_less_than() noexcept -> result<> {
+  auto i_less_than() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.less_than(right, op_mode);
     });
@@ -585,7 +585,7 @@ class VM {
    * Compare two values for greater than or equal. Returns true if the second pop is greater than to the first stack_pop.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_greater_than() noexcept -> result<> {
+  auto i_greater_than() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.greater_than(right, op_mode);
     });
@@ -595,7 +595,7 @@ class VM {
    * Add two values.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_add() noexcept -> result<> {
+  auto i_add() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.add(right, op_mode);
     });
@@ -605,7 +605,7 @@ class VM {
    * Subtract first pop from the second stack_pop.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_subtract() noexcept -> result<> {
+  auto i_subtract() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.subtract(right, op_mode);
     });
@@ -615,7 +615,7 @@ class VM {
    * Multiply two values.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_multiply() noexcept -> result<> {
+  auto i_multiply() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.multiply(right, op_mode);
     });
@@ -625,7 +625,7 @@ class VM {
    * Divides the second pop by first stack_pop and pushes the remainder and then the quotient to the stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_divide_remainder() noexcept -> result<> {
+  auto i_divide_remainder() noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -643,9 +643,9 @@ class VM {
 
     // Compute the values based on the operating mode.
     auto const op_result = left.divide_remainder(right, core.op_mode);
-    auto const err = std::get<0>(op_result);
-    auto const modulo = std::get<1>(op_result);
-    auto const quotient = std::get<2>(op_result);
+    auto const err = op_result.first;
+    auto const modulo = op_result.second;
+    auto const quotient = op_result.third;
     if (err != Error::None) {
       return {err, Unit{}};
     }
@@ -667,7 +667,7 @@ class VM {
    * and pushes the remainder and then the quotient to the stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_multiply_divide_remainder() noexcept -> result<> {
+  auto i_multiply_divide_remainder() noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -686,9 +686,9 @@ class VM {
 
     // Compute the values based on the operating mode.
     auto const op_result = left.multiply_divide_remainder(mul, right, core.op_mode);
-    auto const err = std::get<0>(op_result);
-    auto const modulo = std::get<1>(op_result);
-    auto const quotient = std::get<2>(op_result);
+    auto const err = op_result.first;
+    auto const modulo = op_result.second;
+    auto const quotient = op_result.third;
     if (err != Error::None) {
       return {err, Unit{}};
     }
@@ -709,7 +709,7 @@ class VM {
    * Performs a bitwise AND between two values.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_and() noexcept -> result<> {
+  auto i_and() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.bitwise_and(right);
     });
@@ -719,7 +719,7 @@ class VM {
    * Performs a bitwise OR between two values.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_or() noexcept -> result<> {
+  auto i_or() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.bitwise_or(right);
     });
@@ -729,7 +729,7 @@ class VM {
    * Performs a bitwise XOR between two values.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_xor() noexcept -> result<> {
+  auto i_xor() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.bitwise_xor(right);
     });
@@ -739,7 +739,7 @@ class VM {
    * Performs a two`s complement NOT operation.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_not() noexcept -> result<> {
+  auto i_not() noexcept -> outcome<> {
     // Get the value to NOT.
     auto &core = cores[cur_core_id];
 
@@ -756,7 +756,7 @@ class VM {
     // Perform the NOT operation.
     const auto result = value.bitwise_not();
 
-    // Push the result onto the stack.
+    // Push the outcome onto the stack.
     core.data.push(result);
 
     // Increment the ip.
@@ -771,7 +771,7 @@ class VM {
    * Shift second pop left by first stack_pop.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_shift_left() noexcept -> result<> {
+  auto i_shift_left() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right, OpMode op_mode) {
       return left.bitwise_shift_left(right, op_mode);
     });
@@ -781,7 +781,7 @@ class VM {
    * Shift second stack_pop right by first pop.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_shift_right() noexcept -> result<> {
+  auto i_shift_right() noexcept -> outcome<> {
     return i_binary_op([](const Cell &left, const Cell right, OpMode op_mode) {
       return left.bitwise_shift_right(right, op_mode);
     });
@@ -791,7 +791,7 @@ class VM {
    * Pack four bytes into a single word.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_pack_bytes() noexcept -> result<> {
+  auto i_pack_bytes() noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -810,7 +810,7 @@ class VM {
     const auto a = core.data.pop();
     // Pack the bytes.
     const auto result = Cell(d.to_byte(), c.to_byte(), b.to_byte(), a.to_byte());
-    // Push the result.
+    // Push the outcome.
     core.data.push(result);
 
     // Increment the ip.
@@ -825,7 +825,7 @@ class VM {
    * Unpack four bytes from a single word.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_unpack_bytes() noexcept -> result<> {
+  auto i_unpack_bytes() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -861,7 +861,7 @@ class VM {
    * These addrs mode will reset to `DIRECT` after processing.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_relative() noexcept -> result<> {
+  auto i_relative() noexcept -> outcome<> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -880,7 +880,7 @@ class VM {
    * Calls a subroutine.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_call() noexcept -> result<> {
+  auto i_call() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -932,7 +932,7 @@ class VM {
    * Calls a subroutine at addrs first stack_pop if the condition second pop is true.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_conditional_call() noexcept -> result<> {
+  auto i_conditional_call() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -989,7 +989,7 @@ class VM {
    * Jumps to the addrs first stack_pop.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_jump() noexcept -> result<> {
+  auto i_jump() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1031,7 +1031,7 @@ class VM {
    * Jumps to the addrs first pop if the condition second stack_pop is true.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_conditional_jump() noexcept -> result<> {
+  auto i_conditional_jump() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1080,7 +1080,7 @@ class VM {
    * Returns from a subroutine. Pops the `ip` from the addrs stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_return() noexcept -> result<> {
+  auto i_return() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1107,7 +1107,7 @@ class VM {
    * Pushes the current `ip` onto the addrs stack.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_conditional_return() noexcept -> result<> {
+  auto i_conditional_return() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1149,7 +1149,7 @@ class VM {
    * Sets the interrupt handler for interrupt id first pop to the function at addrs second stack_pop.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_set_interrupt() noexcept -> result<> {
+  auto i_set_interrupt() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1185,7 +1185,7 @@ class VM {
    * Stops processing interrupts.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_halt_interrupts() noexcept -> result<> {
+  auto i_halt_interrupts() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1203,7 +1203,7 @@ class VM {
    * Starts processing interrupts.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_start_interrupts() noexcept -> result<> {
+  auto i_start_interrupts() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1221,7 +1221,7 @@ class VM {
    * Forces an interrupt.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_trigger_interrupt() noexcept -> result<> {
+  auto i_trigger_interrupt() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1252,7 +1252,7 @@ class VM {
    * Triggers an I/O operation.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_invoke_io() noexcept -> result<> {
+  auto i_invoke_io() noexcept -> outcome<> {
 
     // Get the current core.
     auto &core = cores[cur_core_id];
@@ -1283,7 +1283,7 @@ class VM {
    * Halt execution of the system by returning an error.
    * @return A `HaltSystem` error.
    */
-  auto i_halt_system() noexcept -> result<> {
+  auto i_halt_system() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1296,7 +1296,7 @@ class VM {
    * Zeros out all internal registers, then sets the core IP to the addrs. This does not activate the core.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_init_core() noexcept -> result<> {
+  auto i_init_core() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1327,7 +1327,7 @@ class VM {
    * Activates a core. The core should have been initialized first.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_activate_core() noexcept -> result<> {
+  auto i_activate_core() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1358,7 +1358,7 @@ class VM {
    * Pauses a core. Pass the core number stack_pop.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_pause_core() noexcept -> result<> {
+  auto i_pause_core() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1389,7 +1389,7 @@ class VM {
    * Suspends (pause) the current core.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_suspend_cur_core() noexcept -> result<> {
+  auto i_suspend_cur_core() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1408,7 +1408,7 @@ class VM {
    * Reads a register / the private memory in the current core.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_read_register() noexcept -> result<> {
+  auto i_read_register() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1445,7 +1445,7 @@ class VM {
    * Writes a value to a register / the private memory in the current core.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_write_register() noexcept -> result<> {
+  auto i_write_register() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1481,7 +1481,7 @@ class VM {
    * Copy #1 pop bytes of memory from #3 pop to #2 stack_pop.
    * @return
    */
-  auto i_copy_block() noexcept -> result<> {
+  auto i_copy_block() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1519,7 +1519,7 @@ class VM {
    * Compare first pop bytes of memory from third stack_pop to second pop.
    * @return Unit if the operation was successful. Error otherwise.
    */
-  auto i_block_compare() noexcept -> result<> {
+  auto i_block_compare() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1537,14 +1537,14 @@ class VM {
     auto dst = core.data.pop();
     // Get the origin addrs.
     auto orig = core.data.pop();
-    // Get the result.
+    // Get the outcome.
     const auto cmp_result = mem.compare_block(len.to_uint32(), dst.to_uint32(), orig.to_uint32());
     const auto cmp_err = std::get<0>(cmp_result);
     const auto result = std::get<1>(cmp_result);
     if (cmp_err != Error::None) {
       return {cmp_err, Unit{}};
     }
-    // Push the result.
+    // Push the outcome.
     core.data.push(result);
 
     // Increment the ip.
@@ -1560,7 +1560,7 @@ class VM {
    * Lasts only for the next operation.
    * @return
    */
-  auto i_unsigned_mode() noexcept -> result<> {
+  auto i_unsigned_mode() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1576,7 +1576,7 @@ class VM {
    * Set the operation mode to floating point mode.
    * @return
    */
-  auto i_float_mode() noexcept -> result<> {
+  auto i_float_mode() noexcept -> outcome<> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1596,7 +1596,7 @@ class VM {
    * Interprets the current instruction in memory.
    * @return
    */
-  auto interpret() noexcept -> result<> {
+  auto interpret() noexcept -> outcome<> {
     // Construct a jump table. indexes are opcodes and values are the handler blocks.
     static const void *table[] = {
         &&l_no, &&l_lw, &&l_lh, &&l_lb,
@@ -2287,11 +2287,11 @@ class VM {
    * @param byte The byte of memory.
    * @return Result of the operation
    */
-  result<> io_write(size_t addr, uint8_t byte) noexcept {
+  outcome<> io_write(size_t addr, uint8_t byte) noexcept {
     return mem.write_io_byte(addr, byte);
   }
 
-  result<uint8_t> io_read(size_t addr) noexcept {
+  outcome<uint8_t> io_read(size_t addr) noexcept {
     return mem.read_io_byte(addr);
   }
 

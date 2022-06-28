@@ -46,7 +46,7 @@ class InterruptTable {
    * @param id The interrupt id.
    * @return The interrupt handler addrs if the id is valid, Error otherwise.
    */
-  auto get(size_t id) const noexcept -> result<Cell> {
+  auto get(size_t id) const noexcept -> outcome<Cell> {
     if (id >= INTERRUPT_TABLE_SIZE) {
       return {Error::IllegalInterruptId, Cell{}};
     }
@@ -60,7 +60,7 @@ class InterruptTable {
    * @param addr The interrupt handler addrs.
    * @return Unit if the id is valid, Error otherwise.
    */
-  auto set(size_t id, Cell addr) noexcept -> result<Cell> {
+  auto set(size_t id, Cell addr) noexcept -> outcome<Cell> {
     if (id >= INTERRUPT_TABLE_SIZE) {
       return {Error::IllegalInterruptId, Cell{}};
     }

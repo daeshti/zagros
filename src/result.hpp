@@ -56,12 +56,28 @@ enum class Error {
 
 /**
  * A type alias for return values.
- * Since we`re not using exceptions we use a product type to represent the (result * error) of an operation.
+ * Since we`re not using exceptions we use a product type to represent the (outcome * error) of an operation.
  * Unit as type parameter will be optimized by the compiler because it`s an empty struct.
  */
 template<class T=Unit>
-using result = std::pair<Error, T>;
+using outcome = std::pair<Error, T>;
 
+template<class T, class U, class V>
+struct Triple {
+  typedef T first_type;
+  typedef U second_type;
+  typedef V third_type;
 
+  Triple() = default;;
+  Triple(T first, U second, V third) : first(first), second(second), third(third) {}
+  Triple(const Triple &other) : first(other.first), second(other.second), third(other.third) {}
+
+  template<class U1, class U2, class U3>
+  Triple(const Triple<U1, U2, U3> &other) : first(other.first), second(other.second), third(other.third) {}
+
+  T first;
+  U second;
+  V third;
+};
 
 #endif //ZAGROS_RESULT
