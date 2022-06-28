@@ -13,11 +13,11 @@
 #include <cstring>
 #include <vector>
 #include <utility>
+#include <ostream>
 #include "result.hpp"
 #include "cell.hpp"
 #include "zagros_configuration.h"
 #include "instruction_mode.hpp"
-
 
 /**
  * A snapshot of a data stack.
@@ -64,6 +64,18 @@ class DataStackSnapshot {
    */
   size_t get_top() const noexcept {
     return top;
+  }
+
+  virtual std::string toString() const {
+    std::stringstream os;
+    os << "{ arr: [";
+    size_t i;
+    for (i = 0; i < arr.size() - 1; ++i) {
+      os << arr[i].toString() << ", ";
+    }
+    os << arr[i].toString() << "]";
+    os << " top: " << top << " }";
+    return os.str();
   }
 };
 
@@ -113,6 +125,18 @@ class AddressStackSnapshot {
   size_t get_top() const noexcept {
     return top;
   }
+
+  virtual std::string toString() const {
+    std::stringstream os;
+    os << "{ arr: [";
+    size_t i;
+    for (i = 0; i < arr.size() - 1; ++i) {
+      os << arr[i].toString() << ", ";
+    }
+    os << arr[i].toString() << "]";
+    os << " top: " << top << " }";
+    return os.str();
+  }
 };
 
 /**
@@ -151,6 +175,17 @@ class RegisterBankSnapshot {
   std::array<Cell, REGISTER_BANK_SIZE> get_arr() const noexcept {
     return arr;
   }
+
+  virtual std::string toString() const {
+    std::stringstream os;
+    os << "{ arr: [";
+    size_t i;
+    for (i = 0; i < arr.size() - 1; ++i) {
+      os << arr[i].toString() << ", ";
+    }
+    os << arr[i].toString() << "] }";
+    return os.str();
+  }
 };
 
 /**
@@ -178,6 +213,17 @@ class MemorySnapshot {
   std::array<uint8_t, MEMORY_SIZE> get_arr() const noexcept {
     return arr;
   }
+
+  virtual std::string toString() const {
+    std::stringstream os;
+    os << "{ arr: [";
+    size_t i;
+    for (i = 0; i < arr.size() - 1; ++i) {
+      os << arr[i] << ", ";
+    }
+    os << arr[i] << "] }";
+    return os.str();
+  }
 };
 /**
  * A snapshot of the interrupt table.
@@ -202,6 +248,17 @@ class InterruptTableSnapshot {
    */
   auto get_arr() const noexcept -> std::array<Cell, INTERRUPT_TABLE_SIZE> {
     return arr;
+  }
+
+  virtual std::string toString() const {
+    std::stringstream os;
+    os << "{ arr: [";
+    size_t i;
+    for (i = 0; i < arr.size() - 1; ++i) {
+      os << arr[i].toString() << ", ";
+    }
+    os << arr[i].toString() << "] }";
+    return os.str();
   }
 };
 /**
@@ -326,12 +383,19 @@ class CoreSnapshot {
     return regs;
   }
 
+  virtual std::string toString() const {
+    std::stringstream os;
+    os << "{ ip: " << ip << " active: " << active << " op_mode: " << (int) op_mode << " addr_mode: "
+       << (int) addr_mode << " data: " << data.toString() << " addrs: " << addrs.toString() << " regs: "
+       << regs.toString() << " }";
+    return os.str();
+  }
+
 };
 
 class IoTableSnapshot {
   /// The table`s callback descriptions
   const std::vector<std::string> arr;
-
 
  public:
 /**
@@ -346,6 +410,17 @@ class IoTableSnapshot {
    */
   const std::vector<std::string> &get_arr() const noexcept {
     return arr;
+  }
+
+  virtual std::string toString() const {
+    std::stringstream os;
+    os << "arr: [";
+    size_t i;
+    for (i = 0; i < arr.size() - 1; ++i) {
+      os << arr[i] << ", ";
+    }
+    os << arr[i] << "]";
+    return os.str();
   }
 };
 
@@ -380,7 +455,12 @@ class VMSnapshot {
              const IoTableSnapshot io_table,
              const std::array<CoreSnapshot, CORE_COUNT> cores, size_t cur_core_id,
              bool int_enabled) noexcept:
-      mem(mem), int_table(int_table), io_table(io_table), cores(cores), cur_core_id(cur_core_id), int_enabled(int_enabled) {
+      mem(mem),
+      int_table(int_table),
+      io_table(io_table),
+      cores(cores),
+      cur_core_id(cur_core_id),
+      int_enabled(int_enabled) {
 
   }
 
@@ -425,6 +505,23 @@ class VMSnapshot {
    */
   bool get_int_enabled() const noexcept {
     return int_enabled;
+  }
+
+  virtual std::string toString() const {
+    std::stringstream os;
+    os << "{ mem: " << mem.toString() << " int_table: " << int_table.toString();
+
+    os << " cores: [";
+    size_t i;
+    for (i = 0; i < cores.size() - 1; ++i) {
+      os << cores[i].toString() << ", ";
+    }
+    os << cores[i].toString() << " ]";
+
+    os << " io_table: " << io_table.toString() << " cur_core_id: " << cur_core_id << " int_enabled: "
+       << int_enabled << "}";
+
+    return os.str();
   }
 
 };

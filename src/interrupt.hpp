@@ -44,28 +44,28 @@ class InterruptTable {
   /**
    * Gets the interrupt handler addrs for a given interrupt id.
    * @param id The interrupt id.
-   * @return The interrupt handler addrs if the id is valid, Error otherwise.
+   * @return The interrupt handler addrs if the id is valid, ZError otherwise.
    */
-  auto get(size_t id) const noexcept -> outcome<Cell> {
+  auto get(size_t id) const noexcept -> std::pair<ZError, Cell> {
     if (id >= INTERRUPT_TABLE_SIZE) {
-      return {Error::IllegalInterruptId, Cell{}};
+      return {ZError::IllegalInterruptId, Cell{}};
     }
     const auto addr = data[id];
-    return {Error::None, addr};
+    return {ZError::None, addr};
   }
 
   /**
    * Sets the interrupt handler addrs for a given interrupt id.
    * @param id The interrupt id.
    * @param addr The interrupt handler addrs.
-   * @return Unit if the id is valid, Error otherwise.
+   * @return Unit if the id is valid, ZError otherwise.
    */
-  auto set(size_t id, Cell addr) noexcept -> outcome<Cell> {
+  auto set(size_t id, Cell addr) noexcept -> std::pair<ZError, Cell> {
     if (id >= INTERRUPT_TABLE_SIZE) {
-      return {Error::IllegalInterruptId, Cell{}};
+      return {ZError::IllegalInterruptId, Cell{}};
     }
     data[id] = addr;
-    return {Error::None, addr};
+    return {ZError::None, addr};
   }
 
   /**

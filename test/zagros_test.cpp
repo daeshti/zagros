@@ -12,7 +12,7 @@ TEST(DataStack, PushPop) {
 TEST(DataStack, PushPopEmptyUnderflows) {
   auto stack = DataStack{};
   auto const &[underflow, _] = stack.guard(1, 0);
-  ASSERT_EQ(underflow, Error::DataStackUnderflow);
+  ASSERT_EQ(underflow, ZError::DataStackUnderflow);
 }
 
 TEST(DataStack, PushPopFull) {
@@ -34,7 +34,7 @@ TEST(DataStack, PushPopFullOverflows) {
   }
 
   auto const &[overflow, _] = stack.guard(0, 1);
-  EXPECT_EQ(overflow, Error::DataStackOverflow);
+  EXPECT_EQ(overflow, ZError::DataStackOverflow);
 }
 
 TEST(DataStack, PushPopFullUnderflows) {
@@ -48,7 +48,7 @@ TEST(DataStack, PushPopFullUnderflows) {
   }
 
   auto const &[underflow, _] = stack.guard(1, 0);
-  ASSERT_EQ(underflow, Error::DataStackUnderflow);
+  ASSERT_EQ(underflow, ZError::DataStackUnderflow);
 }
 
 TEST(DataStack, ClearWorks) {
@@ -59,7 +59,7 @@ TEST(DataStack, ClearWorks) {
 
   stack.clear();
   auto const &[underflow, _] = stack.guard(1, 0);
-  ASSERT_EQ(underflow, Error::DataStackUnderflow);
+  ASSERT_EQ(underflow, ZError::DataStackUnderflow);
 }
 
 TEST(DataStack, SnapshotWorks) {
@@ -84,28 +84,28 @@ TEST(AddressStack, PushPop) {
   auto const &[none_1, zero] = stack.pop();
   auto const &[none_2, one] = stack.pop();
 
-  ASSERT_EQ(none_1, Error::None);
+  ASSERT_EQ(none_1, ZError::None);
   ASSERT_EQ(zero, Cell{0});
-  ASSERT_EQ(none_2, Error::None);
+  ASSERT_EQ(none_2, ZError::None);
   ASSERT_EQ(one, Cell{1});
 }
 
 TEST(AddressStack, PushPopEmptyUnderflows) {
   auto stack = AddressStack{};
   auto const &[underflow, _] = stack.pop();
-  ASSERT_EQ(underflow, Error::AddressStackUnderflow);
+  ASSERT_EQ(underflow, ZError::AddressStackUnderflow);
 }
 
 TEST(AddressStack, PushPopFull) {
   auto stack = AddressStack{};
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, _] = stack.push(Cell{i});
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, popped] = stack.pop();
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     EXPECT_EQ(popped, Cell{128 - i - 1});
   }
 }
@@ -115,40 +115,40 @@ TEST(AddressStack, PushPopFullOverflows) {
 
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, _] = stack.push(Cell{i});
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   auto const &[overflow, _] = stack.push(Cell{128});
-  ASSERT_EQ(overflow, Error::AddressStackOverflow);
+  ASSERT_EQ(overflow, ZError::AddressStackOverflow);
 }
 
 TEST(AddressStack, PushPopFullUnderflows) {
   auto stack = AddressStack{};
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, _] = stack.push(Cell{i});
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, popped] = stack.pop();
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     EXPECT_EQ(popped, Cell{128 - i - 1});
   }
 
   auto const &[underflow, _] = stack.pop();
-  ASSERT_EQ(underflow, Error::AddressStackUnderflow);
+  ASSERT_EQ(underflow, ZError::AddressStackUnderflow);
 }
 
 TEST(AddressStack, ClearWorks) {
   auto stack = AddressStack{};
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, _] = stack.push(Cell{i});
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   stack.clear();
   auto const &[underflow, _] = stack.pop();
-  ASSERT_EQ(underflow, Error::AddressStackUnderflow);
+  ASSERT_EQ(underflow, ZError::AddressStackUnderflow);
 }
 
 TEST(AddressStack, SnapshotWorks) {
@@ -170,12 +170,12 @@ TEST(RegisterBank, ReadWriteWorks) {
   auto bank = RegisterBank{};
   for (uint32_t i = 0; i < 24; ++i) {
     auto const &[none, _] = bank.write(i, Cell{i});
-    ASSERT_EQ(none, Error::None);
+    ASSERT_EQ(none, ZError::None);
   }
 
   for (uint32_t i = 0; i < 24; ++i) {
     auto const &[none, read] = bank.read(i);
-    ASSERT_EQ(none, Error::None);
+    ASSERT_EQ(none, ZError::None);
     ASSERT_EQ(read, Cell{i});
   }
 }
@@ -183,21 +183,21 @@ TEST(RegisterBank, ReadWriteWorks) {
 TEST(RegisterBank, ReturnsErrorOnIllegalRegisterId) {
   auto bank = RegisterBank{};
   auto const &[read_err, _1] = bank.read(24);
-  ASSERT_EQ(read_err, Error::IllegalRegisterId);
+  ASSERT_EQ(read_err, ZError::IllegalRegisterId);
   auto const &[write_err, _2] = bank.write(24, Cell{0});
-  ASSERT_EQ(write_err, Error::IllegalRegisterId);
+  ASSERT_EQ(write_err, ZError::IllegalRegisterId);
 }
 
 TEST(RegisterBank, ClearWorks) {
   auto bank = RegisterBank{};
   for (uint32_t i = 0; i < 24; ++i) {
     auto const &[none, _] = bank.write(i, Cell{i});
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
   bank.clear();
   for (uint32_t i = 0; i < 24; ++i) {
     auto const &[none, read] = bank.read(i);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     ASSERT_EQ(read, Cell{0});
   }
 }
@@ -206,7 +206,7 @@ TEST(RegisterBank, SnapshotWorks) {
   auto bank = RegisterBank{};
   for (uint32_t i = 0; i < 24; ++i) {
     auto const &[none, _] = bank.write(i, Cell{i});
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   auto const snapshot = bank.snapshot();
@@ -221,13 +221,13 @@ TEST(Memory, ReadWriteWorks) {
   for (uint32_t i = 0; i < 65535; ++i) {
     Cell value = Cell{i % 256};
     auto const &[none, _] = memory.write_bytes<1>(i, value);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   for (uint32_t i = 0; i < 65535; ++i) {
     uint32_t value = i % 256;
     auto const &[none, read] = memory.read_bytes<1>(i);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     EXPECT_EQ(read, Cell{value});
   }
 }
@@ -237,11 +237,11 @@ TEST(Memory, CompareBlockWorks) {
   for (uint32_t i = 0; i < 65535; ++i) {
     Cell value = Cell{i % 256};
     auto const &[none, _] = memory.write_bytes<1>(i, value);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   auto const &[none, res] = memory.compare_block(0, 0, 65535);
-  EXPECT_EQ(none, Error::None);
+  EXPECT_EQ(none, ZError::None);
   EXPECT_EQ(res, Cell{true});
 }
 
@@ -250,23 +250,23 @@ TEST(Memory, CopyBlockWorks) {
   for (uint32_t i = 0; i < 32767; ++i) {
     Cell value = Cell{i % 256};
     auto const &[none, _] = memory.write_bytes<1>(i, value);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   {
     auto const &[none, _] = memory.copy_block(32767, 32767, 0);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   for (uint32_t i = 32767; i < 65534; ++i) {
     Cell value = Cell{(i - 32767) % 256};
     auto const &[none, read] = memory.read_bytes<1>(i);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     EXPECT_EQ(read, value);
   }
   {
     auto const &[none, read] = memory.read_bytes<1>(65534);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     EXPECT_EQ(read, Cell{0});
   }
 }
@@ -281,13 +281,13 @@ TEST(Memory, LoadProgramWorks) {
 
   {
     auto const &[none, _] = memory.load_program(prg, prg.size());
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   for (uint32_t i = 0; i < 65535; ++i) {
     Cell value = Cell{i % 256};
     auto const &[none, read] = memory.read_bytes<1>(i);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     EXPECT_EQ(read, value);
   }
 }
@@ -297,12 +297,12 @@ TEST(Memory, ClearWorks) {
   for (uint32_t i = 0; i < 65535; ++i) {
     Cell value = Cell{i % 256};
     auto const &[none, _] = memory.write_bytes<1>(i, value);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
   memory.clear();
   for (uint32_t i = 0; i < 65535; ++i) {
     auto const &[none, read] = memory.read_bytes<1>(i);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     EXPECT_EQ(read, Cell{0});
   }
 }
@@ -312,7 +312,7 @@ TEST(Memory, SnapshotWorks) {
   for (uint32_t i = 0; i < 65535; ++i) {
     Cell value = Cell{i % 256};
     auto const &[none, _] = memory.write_bytes<1>(i, value);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   auto const snapshot = memory.snapshot();
@@ -327,13 +327,13 @@ TEST(InterruptTable, ReadWriteWorks) {
   for (uint32_t i = 0; i < 128; ++i) {
     uint8_t value = i % 256;
     auto const &[none, _] = interrupt_table.set(i, Cell{value});
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   for (uint32_t i = 0; i < 128; ++i) {
     auto value = Cell{i % 256};
     auto const &[none, read] = interrupt_table.get(i);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     EXPECT_EQ(read, value);
   }
 }
@@ -343,12 +343,12 @@ TEST(InterruptTable, ClearWorks) {
   for (uint32_t i = 0; i < 128; ++i) {
     Cell value = Cell{i % 256};
     auto const &[none, _] = interrupt_table.set(i, value);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
   interrupt_table.clear();
   for (uint32_t i = 0; i < 128; ++i) {
     auto const &[none, read] = interrupt_table.get(i);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
     EXPECT_EQ(read, Cell{0});
   }
 }
@@ -358,7 +358,7 @@ TEST(InterruptTable, SnapshotWorks) {
   for (uint32_t i = 0; i < 128; ++i) {
     Cell value = Cell{i % 256};
     auto const &[none, _] = interrupt_table.set(i, value);
-    EXPECT_EQ(none, Error::None);
+    EXPECT_EQ(none, ZError::None);
   }
 
   auto const snapshot = interrupt_table.snapshot();

@@ -73,7 +73,11 @@ class IoTable {
   IoTableSnapshot snapshot() {
     std::vector<std::string> descriptions;
     for (const auto &callback : callbacks) {
-      descriptions.push_back(callback->description());
+      if (callback != nullptr) {
+        descriptions.push_back(callback->description());
+      } else {
+        descriptions.emplace_back("nullptr");
+      }
     }
     return IoTableSnapshot{descriptions};
   }

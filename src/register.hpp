@@ -39,28 +39,28 @@ class RegisterBank {
   /**
    * Returns the value of a register.
    * @param id The register`s id.
-   * @return The value if the operation is successful, Error otherwise.
+   * @return The value if the operation is successful, ZError otherwise.
    */
-  auto read(size_t id) const noexcept -> outcome<Cell> {
+  auto read(size_t id) const noexcept -> std::pair<ZError, Cell> {
     if (id >= REGISTER_BANK_SIZE) {
-      return {Error::IllegalRegisterId, Cell{}};
+      return {ZError::IllegalRegisterId, Cell{}};
     }
     const auto value = arr[id];
-    return {Error::None, value};
+    return {ZError::None, value};
   }
 
   /**
    * Sets the value of a register.
    * @param id The register`s id.
    * @param value The value to be set.
-   * @return Success if the operation is successful, Error otherwise.
+   * @return Success if the operation is successful, ZError otherwise.
    */
-  auto write(size_t id, Cell value) noexcept -> outcome<> {
+  auto write(size_t id, Cell value) noexcept -> std::pair<ZError, Unit> {
     if (id >= REGISTER_BANK_SIZE) {
-      return {Error::IllegalRegisterId, Unit{}};
+      return {ZError::IllegalRegisterId, Unit{}};
     }
     arr[id] = value;
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**

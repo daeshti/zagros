@@ -30,13 +30,10 @@ typedef unsigned char uint8_t;
 %include <std_vector.i>
 
 %include "../src/result.hpp"
-%template() outcome<Cell>;
-%template() outcome<Unit>;
-%template() outcome<uint8_t>;
-%template(CellResult) std::pair<Error, Cell>;
-%template(UnitResult) std::pair<Error, Unit>;
-%template(ByteResult) std::pair<Error, uint8_t>;
-%template(TripleResult) Triple<Error, Cell, Cell>;
+%template(CellResult) std::pair<ZError, Cell>;
+%template(UnitResult) std::pair<ZError, Unit>;
+%template(ByteResult) std::pair<ZError, uint8_t>;
+%template(TripleResult) Triple<ZError, Cell, Cell>;
 
 
 %include "../src/instruction_mode.hpp"

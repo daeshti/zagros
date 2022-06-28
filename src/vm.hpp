@@ -74,7 +74,7 @@ class VM {
    * Does nothing.
    * @return Unit. Always successful.
    */
-  auto i_nop() -> outcome<> {
+  auto i_nop() -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -83,7 +83,7 @@ class VM {
     // Set the operation mode to 'SIGNED'
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
@@ -92,10 +92,10 @@ class VM {
    * @tparam S The size of value to push.
    * @param addr_offset The addrs offset from `ip` to look for the value.
    * @param i_len Length of the instruction.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
   template<size_t S>
-  auto i_load(size_t addr_offset, size_t i_len) -> outcome<> {
+  auto i_load(size_t addr_offset, size_t i_len) -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -103,7 +103,7 @@ class VM {
     const auto guard_result = core.data.guard(0, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -113,7 +113,7 @@ class VM {
     const auto read_result = mem.template read_bytes<S>(cell_addr);
     const auto read_err = std::get<0>(read_result);
     const auto cell = std::get<1>(read_result);
-    if (read_err != Error::None) {
+    if (read_err != ZError::None) {
       return {read_err, Unit{}};
     }
 
@@ -125,43 +125,43 @@ class VM {
     // Set the operation mode to 'SIGNED'
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * This pushes the value in the following memory location to the stack.
    * It will increment the `ip` and push the word value to the stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_load_word() noexcept -> outcome<> {
+  auto i_load_word() noexcept -> std::pair<ZError, Unit> {
     return i_load<4>(4, 8);
   }
 
   /**
    * Pushes the little endian first half of value to the stack.
    * The value is taken from the following two slots in the memory.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_load_half() noexcept -> outcome<> {
+  auto i_load_half() noexcept -> std::pair<ZError, Unit> {
     return i_load<2>(1, 3);
   }
 
   /**
    * Pushes the little endian first byte of value to the stack.
    * The value is taken from the following slot in the memory.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_load_byte() noexcept -> outcome<> {
+  auto i_load_byte() noexcept -> std::pair<ZError, Unit> {
     return i_load<1>(1, 2);
   }
 
   /**
    * Fetches a T value from memory.
    * @tparam S The size of value to fetch.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
   template<size_t S>
-  auto i_fetch() -> outcome<> {
+  auto i_fetch() -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -169,7 +169,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -179,7 +179,7 @@ class VM {
     const auto read_result = mem.template read_bytes<S>(cell_addr.to_size());
     const auto read_err = std::get<0>(read_result);
     const auto cell = std::get<1>(read_result);
-    if (read_err != Error::None) {
+    if (read_err != ZError::None) {
       return {read_err, Unit{}};
     }
 
@@ -191,30 +191,30 @@ class VM {
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Fetches a word value from memory.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_fetch_word() noexcept -> outcome<> {
+  auto i_fetch_word() noexcept -> std::pair<ZError, Unit> {
     return i_fetch<4>();
   }
 
   /**
    * Fetches a half-word value from memory.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_fetch_half() noexcept -> outcome<> {
+  auto i_fetch_half() noexcept -> std::pair<ZError, Unit> {
     return i_fetch<2>();
   }
 
   /**
    * Fetches a byte value from memory.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_fetch_byte() noexcept -> outcome<> {
+  auto i_fetch_byte() noexcept -> std::pair<ZError, Unit> {
     return i_fetch<1>();
   }
 
@@ -222,10 +222,10 @@ class VM {
    * Stores a T value to memory.
    * @tparam SThe size of the value to store.
    * @param mapper The mapper from `T` to uint32_t.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
   template<size_t S>
-  auto i_store() -> outcome<> {
+  auto i_store() -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -233,7 +233,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -246,7 +246,7 @@ class VM {
     const auto write_result = mem.template write_bytes<S>(cell_addr.to_size(), cell);
     const auto write_err = std::get<0>(write_result);
 
-    if (write_err != Error::None) {
+    if (write_err != ZError::None) {
       return {write_err, Unit{}};
     }
 
@@ -255,38 +255,38 @@ class VM {
     // Set the operation mode to 'SIGNED'
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Stores a word value to memory.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_store_word() noexcept -> outcome<> {
+  auto i_store_word() noexcept -> std::pair<ZError, Unit> {
     return i_store<4>();
   }
 
   /**
    * Stores a half-word value to memory.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_store_half() noexcept -> outcome<> {
+  auto i_store_half() noexcept -> std::pair<ZError, Unit> {
     return i_store<2>();
   }
 
   /**
    * Stores a byte value to memory.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_store_byte() noexcept -> outcome<> {
+  auto i_store_byte() noexcept -> std::pair<ZError, Unit> {
     return i_store<1>();
   }
 
   /**
    * Duplicates the top value on the stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_dupe() noexcept -> outcome<> {
+  auto i_dupe() noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -294,7 +294,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 2);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -309,14 +309,14 @@ class VM {
     // Set the operation mode to 'SIGNED'
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Discards the top value on the stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_drop() noexcept -> outcome<> {
+  auto i_drop() noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -324,7 +324,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -336,14 +336,14 @@ class VM {
     // Set the operation mode to 'SIGNED'
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Swaps the top two values on the stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_swap() noexcept -> outcome<> {
+  auto i_swap() noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -351,7 +351,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 2);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -367,14 +367,14 @@ class VM {
     // Set the operation mode to 'SIGNED'
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Pushes the top value on the arr stack to the addrs stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_push_address() noexcept -> outcome<> {
+  auto i_push_address() noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -382,7 +382,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -392,7 +392,7 @@ class VM {
     const auto push_result = core.addrs.push(addr);
     const auto push_err = std::get<0>(push_result);
 
-    if (push_err != Error::None) {
+    if (push_err != ZError::None) {
       return {push_err, Unit{}};
     }
 
@@ -401,14 +401,14 @@ class VM {
     // Set the operation mode to 'SIGNED'
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Pops the top value from the addrs stack to the arr stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_pop_address() noexcept -> outcome<> {
+  auto i_pop_address() noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -416,7 +416,7 @@ class VM {
     const auto guard_result = core.data.guard(0, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -424,7 +424,7 @@ class VM {
     const auto pop_result = core.addrs.pop();
     const auto pop_err = std::get<0>(pop_result);
     const auto addr = std::get<1>(pop_result);
-    if (pop_err != Error::None) {
+    if (pop_err != ZError::None) {
       return {pop_err, Unit{}};
     }
     // Push the addrs value.
@@ -435,17 +435,17 @@ class VM {
     // Set the operation mode to 'SIGNED'
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Does the binary operation in unsigned mode.
    * @param op The operation.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
   auto i_binary_op(
       Cell (*op)(const Cell &, const Cell)
-  ) noexcept -> outcome<> {
+  ) noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -453,7 +453,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -471,17 +471,17 @@ class VM {
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
  * Does the binary operation in unsigned mode.
  * @param op The operation.
- * @return Unit if the operation was successful. Error otherwise.
+ * @return Unit if the operation was successful. ZError otherwise.
  */
   auto i_binary_op(
       Cell (*op)(const Cell &, const Cell, const OpMode)
-  ) noexcept -> outcome<> {
+  ) noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -489,7 +489,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -507,18 +507,18 @@ class VM {
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
  * Does the binary operation in unsigned mode.
  * @param op The operation.
  * @param unsigned_op The unsigned operation.
- * @return Unit if the operation was successful. Error otherwise.
+ * @return Unit if the operation was successful. ZError otherwise.
  */
   auto i_binary_op(
-      outcome<Cell> (*op)(const Cell &, const Cell, const OpMode)
-  ) noexcept -> outcome<> {
+      std::pair<ZError, Cell> (*op)(const Cell &, const Cell, const OpMode)
+  ) noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -526,7 +526,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -537,7 +537,7 @@ class VM {
     const auto error_result = op(left, right, core.op_mode);
     const auto error = std::get<0>(error_result);
     const auto result = std::get<1>(error_result);
-    if (error != Error::None) {
+    if (error != ZError::None) {
       return {guard_err, Unit{}};
     }
     // Push the outcome.
@@ -548,14 +548,14 @@ class VM {
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Compare two values for equality. Returns true or false on the arr stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_equal() noexcept -> outcome<> {
+  auto i_equal() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.equal(right);
     });
@@ -563,9 +563,9 @@ class VM {
 
   /**
    * Compare two values for inequality. Returns true if they do not match or false if they do.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_not_equal() noexcept -> outcome<> {
+  auto i_not_equal() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.not_equal(right);
     });
@@ -573,9 +573,9 @@ class VM {
 
   /**
    * Compare two values for greater than. Returns true if the second stack_pop is less than the first pop.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_less_than() noexcept -> outcome<> {
+  auto i_less_than() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.less_than(right, op_mode);
     });
@@ -583,9 +583,9 @@ class VM {
 
   /**
    * Compare two values for greater than or equal. Returns true if the second pop is greater than to the first stack_pop.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_greater_than() noexcept -> outcome<> {
+  auto i_greater_than() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.greater_than(right, op_mode);
     });
@@ -593,9 +593,9 @@ class VM {
 
   /**
    * Add two values.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_add() noexcept -> outcome<> {
+  auto i_add() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.add(right, op_mode);
     });
@@ -603,9 +603,9 @@ class VM {
 
   /**
    * Subtract first pop from the second stack_pop.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_subtract() noexcept -> outcome<> {
+  auto i_subtract() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.subtract(right, op_mode);
     });
@@ -613,9 +613,9 @@ class VM {
 
   /**
    * Multiply two values.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_multiply() noexcept -> outcome<> {
+  auto i_multiply() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right, const OpMode op_mode) {
       return left.multiply(right, op_mode);
     });
@@ -623,9 +623,9 @@ class VM {
 
   /**
    * Divides the second pop by first stack_pop and pushes the remainder and then the quotient to the stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_divide_remainder() noexcept -> outcome<> {
+  auto i_divide_remainder() noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -633,7 +633,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 2);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -646,7 +646,7 @@ class VM {
     auto const err = op_result.first;
     auto const modulo = op_result.second;
     auto const quotient = op_result.third;
-    if (err != Error::None) {
+    if (err != ZError::None) {
       return {err, Unit{}};
     }
 
@@ -659,15 +659,15 @@ class VM {
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Divides the third stack_pop by multiplication of first two pops
    * and pushes the remainder and then the quotient to the stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_multiply_divide_remainder() noexcept -> outcome<> {
+  auto i_multiply_divide_remainder() noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -675,7 +675,7 @@ class VM {
     const auto guard_result = core.data.guard(3, 2);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -689,7 +689,7 @@ class VM {
     auto const err = op_result.first;
     auto const modulo = op_result.second;
     auto const quotient = op_result.third;
-    if (err != Error::None) {
+    if (err != ZError::None) {
       return {err, Unit{}};
     }
 
@@ -702,14 +702,14 @@ class VM {
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Performs a bitwise AND between two values.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_and() noexcept -> outcome<> {
+  auto i_and() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.bitwise_and(right);
     });
@@ -717,9 +717,9 @@ class VM {
 
   /**
    * Performs a bitwise OR between two values.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_or() noexcept -> outcome<> {
+  auto i_or() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.bitwise_or(right);
     });
@@ -727,9 +727,9 @@ class VM {
 
   /**
    * Performs a bitwise XOR between two values.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_xor() noexcept -> outcome<> {
+  auto i_xor() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right) {
       return left.bitwise_xor(right);
     });
@@ -737,9 +737,9 @@ class VM {
 
   /**
    * Performs a two`s complement NOT operation.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_not() noexcept -> outcome<> {
+  auto i_not() noexcept -> std::pair<ZError, Unit> {
     // Get the value to NOT.
     auto &core = cores[cur_core_id];
 
@@ -747,7 +747,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -764,14 +764,14 @@ class VM {
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Shift second pop left by first stack_pop.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_shift_left() noexcept -> outcome<> {
+  auto i_shift_left() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right, OpMode op_mode) {
       return left.bitwise_shift_left(right, op_mode);
     });
@@ -779,9 +779,9 @@ class VM {
 
   /**
    * Shift second stack_pop right by first pop.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_shift_right() noexcept -> outcome<> {
+  auto i_shift_right() noexcept -> std::pair<ZError, Unit> {
     return i_binary_op([](const Cell &left, const Cell right, OpMode op_mode) {
       return left.bitwise_shift_right(right, op_mode);
     });
@@ -789,9 +789,9 @@ class VM {
 
   /**
    * Pack four bytes into a single word.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_pack_bytes() noexcept -> outcome<> {
+  auto i_pack_bytes() noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -799,7 +799,7 @@ class VM {
     const auto guard_result = core.data.guard(4, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -818,14 +818,14 @@ class VM {
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Unpack four bytes from a single word.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_unpack_bytes() noexcept -> outcome<> {
+  auto i_unpack_bytes() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -833,7 +833,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 4);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -853,15 +853,15 @@ class VM {
     // Set the operation mode to signed.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Set`s addrs mode to `RELATIVE`
    * These addrs mode will reset to `DIRECT` after processing.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_relative() noexcept -> outcome<> {
+  auto i_relative() noexcept -> std::pair<ZError, Unit> {
     // Get the current core
     auto &core = cores[cur_core_id];
 
@@ -873,14 +873,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Calls a subroutine.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_call() noexcept -> outcome<> {
+  auto i_call() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -888,7 +888,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -898,7 +898,7 @@ class VM {
     const auto push_result = core.addrs.push(Cell{return_addr});
     const auto push_err = std::get<0>(push_result);
 
-    if (push_err != Error::None) {
+    if (push_err != ZError::None) {
       return {push_err, Unit{}};
     }
 
@@ -925,14 +925,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Calls a subroutine at addrs first stack_pop if the condition second pop is true.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_conditional_call() noexcept -> outcome<> {
+  auto i_conditional_call() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -940,7 +940,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -956,7 +956,7 @@ class VM {
       const auto push_result = core.addrs.push(Cell{return_addr});
       const auto push_err = std::get<0>(push_result);
 
-      if (push_err != Error::None) {
+      if (push_err != ZError::None) {
         return {push_err, Unit{}};
       }
 
@@ -982,14 +982,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Jumps to the addrs first stack_pop.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_jump() noexcept -> outcome<> {
+  auto i_jump() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -997,7 +997,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1024,14 +1024,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Jumps to the addrs first pop if the condition second stack_pop is true.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_conditional_jump() noexcept -> outcome<> {
+  auto i_conditional_jump() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1039,7 +1039,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1073,14 +1073,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Returns from a subroutine. Pops the `ip` from the addrs stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_return() noexcept -> outcome<> {
+  auto i_return() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1088,7 +1088,7 @@ class VM {
     const auto pop_result = core.addrs.pop();
     const auto pop_err = std::get<0>(pop_result);
     const auto ret_addr = std::get<1>(pop_result);
-    if (pop_err != Error::None) {
+    if (pop_err != ZError::None) {
       return {pop_err, Unit{}};
     }
     // Set the IP.
@@ -1099,15 +1099,15 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Conditionally returns from a subroutine.
    * Pushes the current `ip` onto the addrs stack.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_conditional_return() noexcept -> outcome<> {
+  auto i_conditional_return() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1115,7 +1115,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1127,7 +1127,7 @@ class VM {
       const auto pop_result = core.addrs.pop();
       const auto pop_err = std::get<0>(pop_result);
       const auto ret_addr = std::get<1>(pop_result);
-      if (pop_err != Error::None) {
+      if (pop_err != ZError::None) {
         return {pop_err, Unit{}};
       }
       // Set the IP.
@@ -1142,14 +1142,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Sets the interrupt handler for interrupt id first pop to the function at addrs second stack_pop.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_set_interrupt() noexcept -> outcome<> {
+  auto i_set_interrupt() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1157,7 +1157,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1169,7 +1169,7 @@ class VM {
     const auto set_result = int_table.set(int_id.to_uint32(), int_addr);
     const auto set_err = std::get<0>(set_result);
 
-    if (set_err != Error::None) {
+    if (set_err != ZError::None) {
       return {set_err, Unit{}};
     }
 
@@ -1178,14 +1178,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Stops processing interrupts.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_halt_interrupts() noexcept -> outcome<> {
+  auto i_halt_interrupts() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1196,14 +1196,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Starts processing interrupts.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_start_interrupts() noexcept -> outcome<> {
+  auto i_start_interrupts() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1214,14 +1214,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Forces an interrupt.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_trigger_interrupt() noexcept -> outcome<> {
+  auto i_trigger_interrupt() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1229,7 +1229,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1245,14 +1245,14 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Triggers an I/O operation.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_invoke_io() noexcept -> outcome<> {
+  auto i_invoke_io() noexcept -> std::pair<ZError, Unit> {
 
     // Get the current core.
     auto &core = cores[cur_core_id];
@@ -1261,7 +1261,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1276,27 +1276,27 @@ class VM {
     // Set the operation mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Halt execution of the system by returning an error.
    * @return A `HaltSystem` error.
    */
-  auto i_halt_system() noexcept -> outcome<> {
+  auto i_halt_system() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
     // Return the error.
-    return {Error::SystemHalt, Unit{}};
+    return {ZError::SystemHalt, Unit{}};
   }
 
   /**
    * Prepares a core. Takes a core number first pop and an addrs second stack_pop.
    * Zeros out all internal registers, then sets the core IP to the addrs. This does not activate the core.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_init_core() noexcept -> outcome<> {
+  auto i_init_core() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1304,7 +1304,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1320,14 +1320,14 @@ class VM {
     // Set op mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Activates a core. The core should have been initialized first.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_activate_core() noexcept -> outcome<> {
+  auto i_activate_core() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1335,7 +1335,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1351,14 +1351,14 @@ class VM {
     // Set op mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Pauses a core. Pass the core number stack_pop.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_pause_core() noexcept -> outcome<> {
+  auto i_pause_core() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1366,7 +1366,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1382,14 +1382,14 @@ class VM {
     // Set op mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Suspends (pause) the current core.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_suspend_cur_core() noexcept -> outcome<> {
+  auto i_suspend_cur_core() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1401,14 +1401,14 @@ class VM {
     // Set op mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Reads a register / the private memory in the current core.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_read_register() noexcept -> outcome<> {
+  auto i_read_register() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1416,7 +1416,7 @@ class VM {
     const auto guard_result = core.data.guard(1, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1426,7 +1426,7 @@ class VM {
     const auto read_result = core.regs.read(reg_id.to_uint32());
     const auto read_err = std::get<0>(read_result);
     const auto read = std::get<1>(read_result);
-    if (read_err != Error::None) {
+    if (read_err != ZError::None) {
       return {read_err, Unit{}};
     }
 
@@ -1438,14 +1438,14 @@ class VM {
     // Set op mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Writes a value to a register / the private memory in the current core.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_write_register() noexcept -> outcome<> {
+  auto i_write_register() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1453,7 +1453,7 @@ class VM {
     const auto guard_result = core.data.guard(2, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1465,7 +1465,7 @@ class VM {
     const auto write_result = core.regs.write(reg_id.to_uint32(), reg_val);
     const auto write_err = std::get<0>(write_result);
 
-    if (write_err != Error::None) {
+    if (write_err != ZError::None) {
       return {write_err, Unit{}};
     }
 
@@ -1474,14 +1474,14 @@ class VM {
     // Set op mode to `SIGNED`.=
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Copy #1 pop bytes of memory from #3 pop to #2 stack_pop.
    * @return
    */
-  auto i_copy_block() noexcept -> outcome<> {
+  auto i_copy_block() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1489,7 +1489,7 @@ class VM {
     const auto guard_result = core.data.guard(3, 0);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1503,7 +1503,7 @@ class VM {
     const auto cpy_result = mem.copy_block(len.to_uint32(), dst.to_uint32(), orig.to_uint32());
     const auto cpy_err = std::get<0>(cpy_result);
 
-    if (cpy_err != Error::None) {
+    if (cpy_err != ZError::None) {
       return {cpy_err, Unit{}};
     }
 
@@ -1512,14 +1512,14 @@ class VM {
     // Set op mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Compare first pop bytes of memory from third stack_pop to second pop.
-   * @return Unit if the operation was successful. Error otherwise.
+   * @return Unit if the operation was successful. ZError otherwise.
    */
-  auto i_block_compare() noexcept -> outcome<> {
+  auto i_block_compare() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1527,7 +1527,7 @@ class VM {
     const auto guard_result = core.data.guard(3, 1);
     const auto guard_err = std::get<0>(guard_result);
 
-    if (guard_err != Error::None) {
+    if (guard_err != ZError::None) {
       return {guard_err, Unit{}};
     }
 
@@ -1541,7 +1541,7 @@ class VM {
     const auto cmp_result = mem.compare_block(len.to_uint32(), dst.to_uint32(), orig.to_uint32());
     const auto cmp_err = std::get<0>(cmp_result);
     const auto result = std::get<1>(cmp_result);
-    if (cmp_err != Error::None) {
+    if (cmp_err != ZError::None) {
       return {cmp_err, Unit{}};
     }
     // Push the outcome.
@@ -1552,7 +1552,7 @@ class VM {
     // Set op mode to `SIGNED`.
     core.op_mode = OpMode::SIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
@@ -1560,7 +1560,7 @@ class VM {
    * Lasts only for the next operation.
    * @return
    */
-  auto i_unsigned_mode() noexcept -> outcome<> {
+  auto i_unsigned_mode() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1569,14 +1569,14 @@ class VM {
     // Set op mode to `UNSIGNED`.
     core.op_mode = OpMode::UNSIGNED;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Set the operation mode to floating point mode.
    * @return
    */
-  auto i_float_mode() noexcept -> outcome<> {
+  auto i_float_mode() noexcept -> std::pair<ZError, Unit> {
     // Get the current core.
     auto &core = cores[cur_core_id];
 
@@ -1585,7 +1585,7 @@ class VM {
     // Set op mode to `FLOAT`.
     core.op_mode = OpMode::FLOAT;
 
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   auto interrupt(size_t int_id) noexcept -> void {
@@ -1596,7 +1596,7 @@ class VM {
    * Interprets the current instruction in memory.
    * @return
    */
-  auto interpret() noexcept -> outcome<> {
+  auto interpret() noexcept -> std::pair<ZError, Unit> {
     // Construct a jump table. indexes are opcodes and values are the handler blocks.
     static const void *table[] = {
         &&l_no, &&l_lw, &&l_lh, &&l_lb,
@@ -1632,7 +1632,7 @@ class VM {
       const auto fetch_err = std::get<0>(fetch_result);
       const auto op_code = std::get<1>(fetch_result);
       // If System Halt error is return, interpreting is over, return.
-      if (fetch_err != Error::None) {
+      if (fetch_err != ZError::None) {
         return {fetch_err, Unit{}};
       }
 
@@ -1646,7 +1646,7 @@ class VM {
       const auto err_result = i_nop();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1657,7 +1657,7 @@ class VM {
       const auto err_result = i_load_word();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1668,7 +1668,7 @@ class VM {
       const auto err_result = i_load_half();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1679,7 +1679,7 @@ class VM {
       const auto err_result = i_load_byte();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1690,7 +1690,7 @@ class VM {
       const auto err_result = i_fetch_word();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1701,7 +1701,7 @@ class VM {
       const auto err_result = i_fetch_half();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1712,7 +1712,7 @@ class VM {
       const auto err_result = i_fetch_byte();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1723,7 +1723,7 @@ class VM {
       const auto err_result = i_store_word();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1734,7 +1734,7 @@ class VM {
       const auto err_result = i_store_half();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1745,7 +1745,7 @@ class VM {
       const auto err_result = i_store_byte();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1756,7 +1756,7 @@ class VM {
       const auto err_result = i_dupe();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1767,7 +1767,7 @@ class VM {
       const auto err_result = i_drop();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1778,7 +1778,7 @@ class VM {
       const auto err_result = i_swap();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1789,7 +1789,7 @@ class VM {
       const auto err_result = i_push_address();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1800,7 +1800,7 @@ class VM {
       const auto err_result = i_pop_address();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1811,7 +1811,7 @@ class VM {
       const auto err_result = i_equal();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1822,7 +1822,7 @@ class VM {
       const auto err_result = i_not_equal();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1833,7 +1833,7 @@ class VM {
       const auto err_result = i_less_than();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1844,7 +1844,7 @@ class VM {
       const auto err_result = i_greater_than();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1855,7 +1855,7 @@ class VM {
       const auto err_result = i_add();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1866,7 +1866,7 @@ class VM {
       const auto err_result = i_subtract();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1877,7 +1877,7 @@ class VM {
       const auto err_result = i_multiply();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1888,7 +1888,7 @@ class VM {
       const auto err_result = i_divide_remainder();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1899,7 +1899,7 @@ class VM {
       const auto err_result = i_multiply_divide_remainder();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1910,7 +1910,7 @@ class VM {
       const auto err_result = i_and();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1921,7 +1921,7 @@ class VM {
       const auto err_result = i_or();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1932,7 +1932,7 @@ class VM {
       const auto err_result = i_xor();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1943,7 +1943,7 @@ class VM {
       const auto err_result = i_not();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1954,7 +1954,7 @@ class VM {
       const auto err_result = i_shift_left();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1965,7 +1965,7 @@ class VM {
       const auto err_result = i_shift_right();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1976,7 +1976,7 @@ class VM {
       const auto err_result = i_pack_bytes();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1987,7 +1987,7 @@ class VM {
       const auto err_result = i_unpack_bytes();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -1998,7 +1998,7 @@ class VM {
       const auto err_result = i_relative();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2009,7 +2009,7 @@ class VM {
       const auto err_result = i_call();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2020,7 +2020,7 @@ class VM {
       const auto err_result = i_conditional_call();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2031,7 +2031,7 @@ class VM {
       const auto err_result = i_jump();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2042,7 +2042,7 @@ class VM {
       const auto err_result = i_conditional_jump();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2053,7 +2053,7 @@ class VM {
       const auto err_result = i_return();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2064,7 +2064,7 @@ class VM {
       const auto err_result = i_conditional_return();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2075,7 +2075,7 @@ class VM {
       const auto err_result = i_set_interrupt();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2086,7 +2086,7 @@ class VM {
       const auto err_result = i_halt_interrupts();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2097,7 +2097,7 @@ class VM {
       const auto err_result = i_start_interrupts();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2108,7 +2108,7 @@ class VM {
       const auto err_result = i_trigger_interrupt();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2119,7 +2119,7 @@ class VM {
       const auto err_result = i_invoke_io();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2130,7 +2130,7 @@ class VM {
       const auto err_result = i_halt_system();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2141,7 +2141,7 @@ class VM {
       const auto err_result = i_init_core();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2152,7 +2152,7 @@ class VM {
       const auto err_result = i_activate_core();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2163,7 +2163,7 @@ class VM {
       const auto err_result = i_pause_core();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2174,7 +2174,7 @@ class VM {
       const auto err_result = i_suspend_cur_core();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2185,7 +2185,7 @@ class VM {
       const auto err_result = i_read_register();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2196,7 +2196,7 @@ class VM {
       const auto err_result = i_write_register();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2207,7 +2207,7 @@ class VM {
       const auto err_result = i_copy_block();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2218,7 +2218,7 @@ class VM {
       const auto err_result = i_block_compare();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2229,7 +2229,7 @@ class VM {
       const auto err_result = i_unsigned_mode();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2240,7 +2240,7 @@ class VM {
       const auto err_result = i_float_mode();
       const auto err = std::get<0>(err_result);
 
-      if (err != Error::None) {
+      if (err != ZError::None) {
         return {err, Unit{}};
       }
 
@@ -2287,11 +2287,11 @@ class VM {
    * @param byte The byte of memory.
    * @return Result of the operation
    */
-  outcome<> io_write(size_t addr, uint8_t byte) noexcept {
+  std::pair<ZError, Unit> io_write(size_t addr, uint8_t byte) noexcept {
     return mem.write_io_byte(addr, byte);
   }
 
-  outcome<uint8_t> io_read(size_t addr) noexcept {
+  std::pair<ZError, uint8_t> io_read(size_t addr) noexcept {
     return mem.read_io_byte(addr);
   }
 

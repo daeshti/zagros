@@ -28,16 +28,16 @@ class DataStack {
    * Guarantees that stack is safe for n `pops` first and then m `pushes` later.
    * @param pops The number of pops to be performed.
    * @param pushes The number of pushes to be performed.
-   * @return Success if the stack is safe, Error otherwise.
+   * @return Success if the stack is safe, ZError otherwise.
    */
-  auto guard(size_t pops, size_t pushes) const noexcept -> outcome<> {
+  auto guard(size_t pops, size_t pushes) const noexcept -> std::pair<ZError, Unit> {
     if (top + pushes > DATA_STACK_SIZE) {
-      return {Error::DataStackOverflow, Unit{}};
+      return {ZError::DataStackOverflow, Unit{}};
     }
     if (top < pops) {
-      return {Error::DataStackUnderflow, Unit{}};
+      return {ZError::DataStackUnderflow, Unit{}};
     }
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
@@ -91,26 +91,26 @@ class AddressStack {
   /**
    * Pushes a value onto the stack.
    * @param value The value to be pushed.
-   * @return Success if the operation is successful, Error otherwise.
+   * @return Success if the operation is successful, ZError otherwise.
    */
-  auto push(Cell value) noexcept -> outcome<> {
+  auto push(Cell value) noexcept -> std::pair<ZError, Unit> {
     if (top >= ADDRESS_STACK_SIZE) {
-      return {Error::AddressStackOverflow, Unit{}};
+      return {ZError::AddressStackOverflow, Unit{}};
     }
     arr[top++] = value;
-    return {Error::None, Unit{}};
+    return {ZError::None, Unit{}};
   }
 
   /**
    * Pops a value off the stack.
-   * @return The value if the operation is successful, Error otherwise.
+   * @return The value if the operation is successful, ZError otherwise.
    */
-  auto pop() noexcept -> outcome<Cell> {
+  auto pop() noexcept -> std::pair<ZError, Cell> {
     if (top == 0) {
-      return {Error::AddressStackUnderflow, Cell{}};
+      return {ZError::AddressStackUnderflow, Cell{}};
     }
     const auto value = arr[--top];
-    return {Error::None, value};
+    return {ZError::None, value};
   }
 
   /**

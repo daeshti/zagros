@@ -16,7 +16,7 @@ enum class Unit {
 /**
  * An enum to represent the different reasons to stop the current interpreting flow.
  */
-enum class Error {
+enum class ZError {
   /// The operation was successful.
   None,
 
@@ -55,13 +55,11 @@ enum class Error {
 };
 
 /**
- * A type alias for return values.
- * Since we`re not using exceptions we use a product type to represent the (outcome * error) of an operation.
- * Unit as type parameter will be optimized by the compiler because it`s an empty struct.
+ * A triple tuple type
+ * @tparam T
+ * @tparam U
+ * @tparam V
  */
-template<class T=Unit>
-using outcome = std::pair<Error, T>;
-
 template<class T, class U, class V>
 struct Triple {
   typedef T first_type;
@@ -71,9 +69,6 @@ struct Triple {
   Triple() = default;;
   Triple(T first, U second, V third) : first(first), second(second), third(third) {}
   Triple(const Triple &other) : first(other.first), second(other.second), third(other.third) {}
-
-  template<class U1, class U2, class U3>
-  Triple(const Triple<U1, U2, U3> &other) : first(other.first), second(other.second), third(other.third) {}
 
   T first;
   U second;

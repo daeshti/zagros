@@ -11,6 +11,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <string>
+#include <sstream>
 #include <utility>
 #include "result.hpp"
 #include "instruction_mode.hpp"
@@ -277,35 +279,35 @@ class Cell {
    * Division and remainder operation.
    * @param rhs The right hand side of the division.
    * @param op_mode The operation mode to use.
-   * @return a tuple of (Error::DivisionByZero, _, _) if the dominator is zero,
-   * otherwise a tuple of (Error::None, Modulo, Quotient).
+   * @return a tuple of (ZError::DivisionByZero, _, _) if the dominator is zero,
+   * otherwise a tuple of (ZError::None, Modulo, Quotient).
    */
-  Triple<Error, Cell, Cell> divide_remainder(const Cell rhs,
-                                                      OpMode op_mode) const noexcept {
+  Triple<ZError, Cell, Cell> divide_remainder(const Cell rhs,
+                                              OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
         if (rhs.to_int32() == 0) {
-          return {Error::DivisionByZero, Cell(0), Cell(0)};
+          return {ZError::DivisionByZero, Cell(0), Cell(0)};
         }
-        return {Error::None,
-                               Cell(this->to_int32() % rhs.to_int32()),
-                               Cell(this->to_int32() / rhs.to_int32())};
+        return {ZError::None,
+                Cell(this->to_int32() % rhs.to_int32()),
+                Cell(this->to_int32() / rhs.to_int32())};
       }
       case OpMode::UNSIGNED: {
         if (rhs.to_uint32() == 0) {
-          return {Error::DivisionByZero, Cell(0), Cell(0)};
+          return {ZError::DivisionByZero, Cell(0), Cell(0)};
         }
-        return {Error::None,
-                               Cell(this->to_uint32() % rhs.to_uint32()),
-                               Cell(this->to_uint32() / rhs.to_uint32())};
+        return {ZError::None,
+                Cell(this->to_uint32() % rhs.to_uint32()),
+                Cell(this->to_uint32() / rhs.to_uint32())};
       }
       case OpMode::FLOAT: {
         if (rhs.to_float() == 0.0) {
-          return {Error::DivisionByZero, Cell(0), Cell(0)};
+          return {ZError::DivisionByZero, Cell(0), Cell(0)};
         }
-        return {Error::None,
-                               Cell(fmod(this->to_float(), rhs.to_float())),
-                               Cell(this->to_float() / rhs.to_float())};
+        return {ZError::None,
+                Cell(fmod(this->to_float(), rhs.to_float())),
+                Cell(this->to_float() / rhs.to_float())};
       }
     }
   }
@@ -315,33 +317,33 @@ class Cell {
    * @param mid The value to multiply the this by.
    * @param rhs The right hand side of the division.
    * @param op_mode The operation mode to use.
-   * @return a tuple of (Error::DivisionByZero, _, _) if the dominator is zero,
-   * otherwise a tuple of (Error::None, Modulo, Quotient).
+   * @return a tuple of (ZError::DivisionByZero, _, _) if the dominator is zero,
+   * otherwise a tuple of (ZError::None, Modulo, Quotient).
    */
-  Triple<Error, Cell, Cell> multiply_divide_remainder(
+  Triple<ZError, Cell, Cell> multiply_divide_remainder(
       const Cell mul, const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
         if (rhs.to_int32() == 0) {
-          return {Error::DivisionByZero, Cell(0), Cell(0)};
+          return {ZError::DivisionByZero, Cell(0), Cell(0)};
         }
-        return {Error::None,
+        return {ZError::None,
                 Cell((this->to_int32() * mul.to_int32()) % rhs.to_int32()),
                 Cell((this->to_int32() * mul.to_int32()) / rhs.to_int32())};
       }
       case OpMode::UNSIGNED: {
         if (rhs.to_uint32() == 0) {
-          return {Error::DivisionByZero, Cell(0), Cell(0)};
+          return {ZError::DivisionByZero, Cell(0), Cell(0)};
         }
-        return {Error::None,
+        return {ZError::None,
                 Cell((this->to_uint32() * mul.to_uint32()) % rhs.to_uint32()),
                 Cell((this->to_uint32() * mul.to_uint32()) / rhs.to_uint32())};
       }
       case OpMode::FLOAT: {
         if (rhs.to_float() == 0.0) {
-          return {Error::DivisionByZero, Cell(0), Cell(0)};
+          return {ZError::DivisionByZero, Cell(0), Cell(0)};
         }
-        return {Error::None,
+        return {ZError::None,
                 Cell(fmod((this->to_float() * mul.to_float()), rhs.to_float())),
                 Cell((this->to_float() * mul.to_float()) / rhs.to_float())};
       }
@@ -394,19 +396,19 @@ class Cell {
    * Bitwise left shift operation.
    * @param rhs The right hand side of the operation.
    * @param op_mode The operation mode.
-   * @return a pair of (Error::InvalidFloatOperation, _) if any of the arguments is a float,
-   * otherwise a pair of (Error::None, Result).
+   * @return a pair of (ZError::InvalidFloatOperation, _) if any of the arguments is a float,
+   * otherwise a pair of (ZError::None, Result).
    */
-  outcome<Cell> bitwise_shift_left(const Cell rhs, OpMode op_mode) const noexcept {
+  std::pair<ZError, Cell> bitwise_shift_left(const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
-        return {Error::None, Cell(this->to_int32() << rhs.to_int32())};
+        return {ZError::None, Cell(this->to_int32() << rhs.to_int32())};
       }
       case OpMode::UNSIGNED: {
-        return {Error::None, Cell(this->to_uint32() << rhs.to_uint32())};
+        return {ZError::None, Cell(this->to_uint32() << rhs.to_uint32())};
       }
       case OpMode::FLOAT: {
-        return {Error::InvalidFloatOperation, Cell(0)};
+        return {ZError::InvalidFloatOperation, Cell(0)};
       }
     }
   }
@@ -415,19 +417,19 @@ class Cell {
    * Bitwise right shift operation.
    * @param rhs The right hand side of the operation.
    * @param op_mode The operation mode.
-   * @return a pair of (Error::InvalidFloatOperation, _) if any of the arguments is a float,
-   * otherwise a pair of (Error::None, Result).
+   * @return a pair of (ZError::InvalidFloatOperation, _) if any of the arguments is a float,
+   * otherwise a pair of (ZError::None, Result).
    */
-  outcome<Cell> bitwise_shift_right(const Cell rhs, OpMode op_mode) const noexcept {
+  std::pair<ZError, Cell> bitwise_shift_right(const Cell rhs, OpMode op_mode) const noexcept {
     switch (op_mode) {
       case OpMode::SIGNED: {
-        return {Error::None, Cell(this->to_int32() >> rhs.to_int32())};
+        return {ZError::None, Cell(this->to_int32() >> rhs.to_int32())};
       }
       case OpMode::UNSIGNED: {
-        return {Error::None, Cell(this->to_uint32() >> rhs.to_uint32())};
+        return {ZError::None, Cell(this->to_uint32() >> rhs.to_uint32())};
       }
       case OpMode::FLOAT: {
-        return {Error::InvalidFloatOperation, Cell(0)};
+        return {ZError::InvalidFloatOperation, Cell(0)};
       }
     }
   }
@@ -448,6 +450,12 @@ class Cell {
     return this->to_uint32() == rhs.to_uint32();
   }
   // endregion
+
+  virtual std::string toString() const {
+    std::stringstream os;
+    os << "[" << bs[0] << ", " << bs[1] << ", " << bs[2] << ", " << bs[3] << "] (" << to_int32() << ")";
+    return os.str();
+  }
 };
 
 #endif //ZAGROS_CELL
